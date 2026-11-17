@@ -10,7 +10,7 @@
     --p-color: #0ff;
     --s-color: #f0f;
     --bg-dark: #050510;
-    --ui-bg: rgba(10, 10, 25, 0.9);
+    --ui-bg: rgba(10, 10, 25, 0.95);
     --btn-bg: #1a1a3a;
     --err: #ff3366;
     --succ: #33ffaa;
@@ -19,125 +19,125 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; touch-action: manipulation; }
   body { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100dvh; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; color: white; }
   
-  #app { position: relative; width: 100%; max-width: 480px; height: 100dvh; background: var(--bg-dark); overflow: hidden; box-shadow: 0 0 20px rgba(0,255,255,0.2); }
+  #app { position: relative; width: 100%; max-width: 480px; height: 100dvh; background: var(--bg-dark); overflow: hidden; box-shadow: 0 0 20px rgba(0,255,255,0.2); display: flex; flex-direction: column; }
   
   /* Canvas Layers */
   #bg-canvas, #game-canvas, #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
   #bg-canvas { z-index: 1; }
-  #game-canvas { z-index: 5; } /* Combat render */
-  #ui-canvas { z-index: 15; } /* Confetti/VFX over UI */
+  #game-canvas { z-index: 5; }
+  #ui-canvas { z-index: 15; }
   
   /* UI Screens */
-  .screen, .modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; }
+  .screen, .modal { position: absolute; top: 0; left: 0; width: 100%; height: 100dvh; display: none; flex-direction: column; }
   .screen { z-index: 10; }
-  .modal { z-index: 30; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); padding: 20px; overflow-y: auto; pointer-events: auto; justify-content: flex-start; }
+  .modal { z-index: 30; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); padding: max(20px, env(safe-area-inset-top)) 20px 20px 20px; overflow-y: auto; pointer-events: auto; justify-content: flex-start; }
   .active { display: flex !important; }
   
   /* Global Buttons & Text */
-  .btn { pointer-events: auto; background: var(--btn-bg); border: 2px solid var(--p-color); color: var(--p-color); padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; text-shadow: 0 0 5px var(--p-color); box-shadow: inset 0 0 10px rgba(0,255,255,0.2); transition: transform 0.1s, filter 0.1s; text-align: center; }
+  .btn { pointer-events: auto; background: var(--btn-bg); border: 2px solid var(--p-color); color: var(--p-color); padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: transform 0.1s, filter 0.1s; text-align: center; }
   .btn:active { transform: scale(0.95); filter: brightness(1.2); }
   .btn:disabled { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
-  .modal-close { position: absolute; top: 15px; right: 15px; z-index: 40; }
+  .modal-close { position: absolute; top: max(15px, env(safe-area-inset-top)); right: 15px; z-index: 40; }
   h1, h2, h3 { margin: 0; text-align: center; }
-  .text-glow-cyan { color: var(--p-color); text-shadow: 0 0 10px var(--p-color); }
-  .text-glow-gold { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
-  .text-glow-magenta { color: var(--s-color); text-shadow: 0 0 10px var(--s-color); }
+  .text-glow-cyan { color: var(--p-color); }
+  .text-glow-gold { color: var(--gold); }
+  .text-glow-magenta { color: var(--s-color); }
   
-  /* HUD */
-  .hud { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; z-index: 20; display: flex; justify-content: space-between; pointer-events: none; text-shadow: 1px 1px 3px #000; }
-  .fps { font-size: 10px; color: #555; position: absolute; top: 5px; right: 5px; }
+  .fps { font-size: 10px; color: #aaa; position: absolute; top: env(safe-area-inset-top); right: 5px; z-index: 50; }
   
   /* --- Screen: Main Menu --- */
-  #main-menu { background: linear-gradient(to bottom, rgba(0,10,30,0.8), rgba(0,0,10,0.9)); justify-content: space-between; padding-bottom: 20px; pointer-events: auto; }
+  #main-menu { 
+    background: transparent; justify-content: space-between; 
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: max(20px, env(safe-area-inset-bottom)); 
+    pointer-events: auto; 
+  }
   
   /* Commander Bar */
-  .commander-bar { display: flex; flex-direction: column; padding: 10px; background: rgba(20,20,40,0.8); border-bottom: 2px solid var(--p-color); }
+  .commander-bar { display: flex; flex-direction: column; padding: 15px; background: rgba(15,15,30,0.9); border-bottom: 2px solid var(--p-color); flex-shrink: 0; }
   .cmd-top { display: flex; justify-content: space-between; align-items: center; }
-  .rank-title { font-size: 18px; font-weight: 900; background: linear-gradient(90deg, #0ff, #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .coins-display { font-size: 16px; font-weight: bold; color: var(--gold); display: flex; align-items: center; gap: 5px; }
+  .rank-title { font-size: 20px; font-weight: 900; background: linear-gradient(90deg, #0ff, #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .coins-display { font-size: 18px; font-weight: bold; color: var(--gold); display: flex; align-items: center; gap: 5px; }
   .cmd-actions { display: flex; justify-content: space-between; margin-top: 10px; gap: 10px; }
   
   /* Hangar Showcase */
-  .hangar { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; perspective: 1000px; margin: 10px 0; }
-  .hangar-title { position: absolute; top: 0; font-size: 14px; color: #aaa; letter-spacing: 2px; }
-  #hangar-canvas-container { width: 200px; height: 200px; position: relative; }
-  #hangar-canvas { position: absolute; width: 100%; height: 100%; }
-  .hangar-info { text-align: center; margin-top: 10px; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid #444; }
-  .rarity-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 5px; color:#000; }
+  .hangar { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; perspective: 1000px; margin: 5px 0; cursor: pointer; }
+  .hangar-title { position: absolute; top: 10px; font-size: 14px; color: #0ff; font-weight: bold; letter-spacing: 2px; text-shadow: 0 0 5px #0ff; }
+  #hangar-canvas-container { width: 220px; height: 180px; position: relative; }
+  #hangar-canvas { width: 100%; height: 100%; display: block; }
+  .hangar-info { text-align: center; margin-top: 5px; background: rgba(0,0,0,0.7); padding: 8px 20px; border-radius: 20px; border: 1px solid #444; }
+  .rarity-badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 5px; color:#000; }
   
   /* Campaign Boards */
-  .campaign-container { display: flex; flex-direction: column; gap: 15px; padding: 0 20px; }
-  .campaign-card { position: relative; height: 90px; border-radius: 12px; overflow: hidden; border: 2px solid #555; display: flex; align-items: center; padding: 15px; cursor: pointer; transition: border-color 0.2s; background: linear-gradient(135deg, #1a1a2a, #2a2a4a); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-  .campaign-card::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%); transform: rotate(45deg); transition: 0.5s; pointer-events: none; }
-  .campaign-card:active::after { left: 100%; }
+  .campaign-container { display: flex; flex-direction: column; gap: 12px; padding: 0 20px; flex-shrink: 0; }
+  .campaign-card { position: relative; height: 85px; border-radius: 12px; overflow: hidden; border: 2px solid #555; display: flex; align-items: center; padding: 15px; cursor: pointer; background: linear-gradient(135deg, #1a1a2a, #2a2a4a); }
   .campaign-card.vocab { border-color: var(--p-color); }
   .campaign-card.grammar { border-color: var(--s-color); }
   .c-card-content { z-index: 2; width: 100%; }
-  .c-card-title { font-size: 22px; font-weight: 900; margin-bottom: 5px; }
+  .c-card-title { font-size: 20px; font-weight: 900; margin-bottom: 5px; }
   .vocab .c-card-title { color: var(--p-color); }
   .grammar .c-card-title { color: var(--s-color); }
-  .c-card-prog { font-size: 14px; color: #ccc; display: flex; justify-content: space-between; }
-  .prog-bar-bg { width: 100%; height: 4px; background: #222; border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .c-card-prog { font-size: 13px; color: #ccc; display: flex; justify-content: space-between; }
+  .prog-bar-bg { width: 100%; height: 6px; background: #222; border-radius: 3px; margin-top: 6px; overflow: hidden; }
   .prog-bar-fill { height: 100%; transition: width 0.3s; }
   .vocab .prog-bar-fill { background: var(--p-color); }
   .grammar .prog-bar-fill { background: var(--s-color); }
   
   /* Bottom Corner Buttons */
-  .sys-btn-container { display: flex; justify-content: space-between; padding: 0 20px; margin-top: 15px; }
-  .sys-btn { width: 70px; height: 70px; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; text-align: center; border: 3px solid; cursor: pointer; position: relative; background: radial-gradient(circle, #223, #001); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+  .sys-btn-container { display: flex; justify-content: space-between; padding: 0 30px; margin-top: 10px; flex-shrink: 0; }
+  .sys-btn { width: 65px; height: 65px; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; text-align: center; border: 3px solid; cursor: pointer; position: relative; background: radial-gradient(circle, #223, #001); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
   .sys-btn.gacha { border-color: var(--gold); color: var(--gold); }
   .sys-btn.dex { border-color: var(--s-color); color: var(--s-color); }
   .sys-btn:active { transform: scale(0.9); }
-  .sys-btn-icon { font-size: 24px; margin-bottom: 2px; }
-  .badge-dot { position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; background: red; border-radius: 50%; border: 2px solid #000; animation: pulse 1s infinite; display: none; }
-  @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); } }
+  .sys-btn-icon { font-size: 22px; margin-bottom: 2px; }
+  .badge-dot { position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; background: red; border-radius: 50%; border: 2px solid #000; animation: pulse 1s infinite; display: none; }
   
   /* --- Screen: Combat UI --- */
-  #combat-ui { justify-content: flex-end; background: transparent; }
-  .combat-top-hud { position: absolute; top: 10px; width: 100%; padding: 0 20px; display: flex; justify-content: space-between; pointer-events: none; z-index: 20; }
-  .base-hp-container { display: flex; align-items: center; gap: 5px; }
-  .base-hp-bar { width: 100px; height: 10px; background: #333; border border: 1px solid #555; border-radius: 5px; overflow: hidden; }
+  #combat-ui { justify-content: flex-end; background: transparent; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+  .combat-top-hud { position: absolute; top: max(10px, env(safe-area-inset-top)); width: 100%; padding: 0 20px; display: flex; justify-content: space-between; pointer-events: none; z-index: 20; }
+  .base-hp-container { display: flex; align-items: center; gap: 8px; }
+  .base-hp-bar { width: 120px; height: 12px; background: rgba(0,0,0,0.5); border: 2px solid #555; border-radius: 6px; overflow: hidden; }
   .base-hp-fill { height: 100%; background: #0f0; transition: width 0.2s, background-color 0.2s; }
   
-  .qa-panel { height: 48%; background: var(--ui-bg); border-top: 3px solid var(--p-color); display: flex; flex-direction: column; padding: 15px; pointer-events: auto; z-index: 20; box-shadow: 0 -10px 20px rgba(0,0,0,0.5); transition: border-color 0.2s; }
-  .timer-bar-container { width: 100%; height: 8px; background: #222; border-radius: 4px; margin-bottom: 12px; overflow: hidden; border: 1px solid #444; }
+  .qa-panel { height: 45%; background: var(--ui-bg); border-top: 3px solid var(--p-color); border-radius: 20px 20px 0 0; display: flex; flex-direction: column; padding: 20px; pointer-events: auto; z-index: 20; box-shadow: 0 -10px 30px rgba(0,255,255,0.1); }
+  .timer-bar-container { width: 100%; height: 10px; background: #222; border-radius: 5px; margin-bottom: 12px; overflow: hidden; border: 1px solid #444; }
   .timer-bar { height: 100%; background: var(--p-color); width: 100%; transition: width 0.1s linear, background 0.3s; }
-  .question-box { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 20px; font-weight: bold; padding: 0 10px; margin-bottom: 15px; text-shadow: 1px 1px 2px #000; line-height: 1.4; }
-  .options-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-gap: 12px; height: 60%; }
-  .opt-btn { background: linear-gradient(to bottom, #2a2a4a, #1a1a3a); border: 2px solid #557; border-radius: 12px; color: white; font-size: 18px; font-weight: bold; display: flex; justify-content: center; align-items: center; padding: 5px; text-align: center; transition: all 0.1s; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+  .question-box { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 22px; font-weight: bold; padding: 0 10px; margin-bottom: 15px; text-shadow: 1px 1px 2px #000; line-height: 1.4; color: #fff; }
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-gap: 12px; height: 65%; }
+  .opt-btn { background: linear-gradient(to bottom, #2a2a4a, #1a1a3a); border: 2px solid #557; border-radius: 12px; color: white; font-size: 18px; font-weight: bold; display: flex; justify-content: center; align-items: center; padding: 5px; text-align: center; transition: all 0.1s; }
   .opt-btn:active { transform: scale(0.95); background: #335; }
   .opt-btn.correct { background: var(--succ); border-color: #fff; color: #000; }
   .opt-btn.wrong { background: var(--err); border-color: #fff; color: #fff; }
   
   /* --- Modals --- */
-  .grid-list { display: grid; gap: 10px; padding: 10px 0; }
-  .gacha-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+  .grid-list { display: grid; gap: 12px; padding: 10px 0; }
+  .gacha-grid { grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); }
   .dex-grid { grid-template-columns: repeat(2, 1fr); }
   
-  .card-item { background: #112; border: 2px solid #335; border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: transform 0.1s; position: relative; overflow: hidden; }
+  .card-item { background: #112; border: 2px solid #335; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: transform 0.1s; position: relative; overflow: hidden; }
   .card-item:active { transform: scale(0.95); }
-  .card-item.locked { filter: grayscale(1) brightness(0.5); pointer-events: none; }
+  .card-item.locked { filter: grayscale(1) brightness(0.4); pointer-events: none; }
   
   .list-row { background: #112; border: 1px solid #445; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
   
   /* Gacha Animation */
   #gacha-anim { background: #000; justify-content: center; align-items: center; z-index: 50; overflow: hidden; }
-  .summon-circle { width: 200px; height: 200px; border: 5px dashed #fff; border-radius: 50%; animation: spin 2s linear infinite; display: flex; justify-content: center; align-items: center; position: relative; }
-  .summon-core { width: 50px; height: 50px; background: #fff; border-radius: 50%; box-shadow: 0 0 50px #fff; animation: pulse 0.5s infinite alternate; }
+  .summon-circle { width: 220px; height: 220px; border: 6px dashed var(--gold); border-radius: 50%; animation: spin 2s linear infinite; display: flex; justify-content: center; align-items: center; position: relative; }
+  .summon-core { width: 60px; height: 60px; background: #fff; border-radius: 50%; box-shadow: 0 0 60px #fff; animation: pulse 0.5s infinite alternate; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
+  @keyframes pulse { 0% { transform: scale(0.9); } 100% { transform: scale(1.1); } }
   
   /* Victory Banner */
-  .victory-banner { font-size: 36px; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold), 0 0 40px #f80; text-align: center; margin: 20px auto; animation: slideDownBounce 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform: translateY(-100vh); }
+  .victory-banner { font-size: 36px; font-weight: 900; color: var(--gold); text-shadow: 0 0 15px var(--gold); text-align: center; margin: 20px auto; animation: slideDownBounce 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform: translateY(-100vh); }
   @keyframes slideDownBounce { to { transform: translateY(0); } }
   
   /* Stage Select */
-  .stage-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 20px; }
-  .stage-btn { aspect-ratio: 1; display: flex; justify-content: center; align-items: center; background: #223; border: 2px solid #445; border-radius: 8px; font-weight: bold; cursor: pointer; }
+  .stage-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 15px; overflow-y: auto; padding-bottom: 20px; }
+  .stage-btn { aspect-ratio: 1; display: flex; justify-content: center; align-items: center; background: #223; border: 2px solid #445; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; }
   .stage-btn.unlocked { border-color: var(--p-color); color: #fff; }
   .stage-btn.locked { opacity: 0.3; pointer-events: none; }
   .stage-btn.current { background: var(--p-color); color: #000; }
   
-  /* Overheat overlay */
   #overheat-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,0,0,0.2); pointer-events: none; display: none; z-index: 25; }
 </style>
 </head>
@@ -153,24 +153,22 @@
 
   <!-- ================= SCREEN: MAIN MENU ================= -->
   <div id="main-menu" class="screen active">
-    <!-- Commander Bar -->
     <div class="commander-bar">
       <div class="cmd-top">
         <div class="rank-title" id="cmd-rank">見習詞彙兵</div>
-        <div class="coins-display"><span style="font-size:20px;">💎</span> <span id="hud-coins">0</span></div>
+        <div class="coins-display"><span style="font-size:22px;">💎</span> <span id="hud-coins">0</span></div>
       </div>
       <div class="cmd-actions">
-        <button class="btn" style="flex:1; font-size:12px; padding:8px;" onclick="UI.openMistakes()">考前錯題本 <span id="mistake-cnt" style="color:var(--err);">(0)</span></button>
-        <button class="btn" style="flex:1; font-size:12px; padding:8px; border-color:var(--gold); color:var(--gold);" onclick="Game.claimDaily()" id="btn-daily">每日補給</button>
-        <button class="btn" style="padding:8px;" onclick="Game.addTestCoins()">+5000</button>
+        <button class="btn" style="flex:1; font-size:13px; padding:10px;" onclick="UI.openMistakes()">考前錯題本 <span id="mistake-cnt" style="color:var(--err);">(0)</span></button>
+        <button class="btn" style="flex:1; font-size:13px; padding:10px; border-color:var(--gold); color:var(--gold);" onclick="Game.claimDaily()" id="btn-daily">每日補給</button>
       </div>
     </div>
     
-    <!-- Hangar Showcase -->
     <div class="hangar" onclick="UI.openTurretDetail(State.equippedTurret)">
       <div class="hangar-title">ACTIVE DEFENSE SYSTEM</div>
       <div id="hangar-canvas-container">
-        <!-- Renderer will draw here -->
+        <!-- 靜態 Canvas，避免動態生成導致切邊或尺寸異常 -->
+        <canvas id="hangar-canvas" width="220" height="180"></canvas>
       </div>
       <div class="hangar-info">
         <div class="rarity-badge" id="hangar-rare">N</div>
@@ -179,25 +177,23 @@
       </div>
     </div>
     
-    <!-- Campaign Boards -->
     <div class="campaign-container">
       <div class="campaign-card vocab" onclick="UI.openStageSelect('vocab')">
         <div class="c-card-content">
           <div class="c-card-title">單字征途</div>
-          <div class="c-card-prog"><span id="prog-txt-vocab">第 1 關 / 初級</span> <span>1%</span></div>
+          <div class="c-card-prog"><span id="prog-txt-vocab">第 1 關 / 初級</span> <span></span></div>
           <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-bar-vocab" style="width: 1%;"></div></div>
         </div>
       </div>
       <div class="campaign-card grammar" onclick="UI.openStageSelect('grammar')">
         <div class="c-card-content">
           <div class="c-card-title">文法試煉</div>
-          <div class="c-card-prog"><span id="prog-txt-grammar">第 1 關 / 初級</span> <span>1%</span></div>
+          <div class="c-card-prog"><span id="prog-txt-grammar">第 1 關 / 初級</span> <span></span></div>
           <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-bar-grammar" style="width: 1%;"></div></div>
         </div>
       </div>
     </div>
     
-    <!-- Bottom Systems -->
     <div class="sys-btn-container">
       <div class="sys-btn gacha" onclick="UI.openGacha()">
         <div class="sys-btn-icon">🎰</div>商店
@@ -205,7 +201,7 @@
       </div>
       <div class="sys-btn dex" onclick="UI.openDex()">
         <div class="sys-btn-icon">📖</div>圖鑑
-        <div style="font-size:10px; color:#aaa; margin-top:2px;" id="dex-prog-txt">0/42</div>
+        <div style="font-size:10px; color:#ccc; margin-top:2px;" id="dex-prog-txt">0/42</div>
       </div>
     </div>
   </div>
@@ -218,12 +214,12 @@
         <div class="base-hp-bar"><div class="base-hp-fill" id="combat-hp-fill"></div></div>
       </div>
       <div style="text-align:right;">
-        <div id="combat-stage-info" style="font-size:12px; color:#aaa;">單字 第1關</div>
-        <div id="combat-enemies" style="font-weight:bold; color:#fff;">剩餘: 0</div>
+        <div id="combat-stage-info" style="font-size:14px; font-weight:bold; color:var(--p-color);">單字 第1關</div>
+        <div id="combat-enemies" style="font-weight:bold; font-size:16px; color:#fff;">剩餘: 0</div>
       </div>
     </div>
     
-    <div id="fever-text" style="position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-size:40px; font-weight:900; color:var(--gold); text-shadow:0 0 20px var(--gold); display:none; z-index:25; animation:pulse 0.5s infinite;">FEVER TIME!</div>
+    <div id="fever-text" style="position:absolute; top:35%; left:50%; transform:translate(-50%,-50%); font-size:40px; font-weight:900; color:var(--gold); display:none; z-index:25; animation:pulse 0.3s infinite alternate;">CRITICAL!</div>
     
     <div class="qa-panel" id="qa-panel">
       <div class="timer-bar-container"><div class="timer-bar" id="qa-timer"></div></div>
@@ -239,57 +235,52 @@
 
   <!-- ================= MODALS ================= -->
   
-  <!-- Stage Select -->
   <div id="modal-stage" class="modal">
     <button class="btn modal-close" onclick="UI.closeModal('modal-stage')">X</button>
     <h2 class="text-glow-cyan" id="ms-title">選擇關卡</h2>
     <div class="stage-grid" id="ms-grid"></div>
-    <div style="margin-top: 20px; text-align: center;">
+    <div style="margin-top: 15px; text-align: center;">
       <button class="btn" style="width:100%; padding:15px; font-size:20px;" id="ms-start-btn">出戰最新關卡</button>
     </div>
   </div>
 
-  <!-- Gacha Store -->
   <div id="modal-gacha" class="modal">
     <button class="btn modal-close" onclick="UI.closeModal('modal-gacha')">X</button>
     <h2 class="text-glow-gold">轉蛋商店</h2>
-    <div style="text-align:center; margin:10px 0;">持有: <span id="mg-coins" style="color:var(--gold); font-weight:bold;">0</span> 💎</div>
+    <div style="text-align:center; margin:10px 0; font-size:18px;">持有: <span id="mg-coins" style="color:var(--gold); font-weight:bold;">0</span> 💎</div>
     
     <div style="display:flex; gap:10px; margin-bottom: 20px;">
-      <button class="btn" style="flex:1;" onclick="Gacha.pull(1)">單抽<br><span style="font-size:12px; font-weight:normal;">100 💎</span></button>
-      <button class="btn" style="flex:1; border-color:var(--s-color); color:var(--s-color);" onclick="Gacha.pull(10)">10連抽 (保底SR)<br><span style="font-size:12px; font-weight:normal;">900 💎</span></button>
+      <button class="btn" style="flex:1; padding:15px;" onclick="Gacha.pull(1)">單抽<br><span style="font-size:14px; font-weight:normal;">100 💎</span></button>
+      <button class="btn" style="flex:1; border-color:var(--s-color); color:var(--s-color); padding:15px;" onclick="Gacha.pull(10)">10連抽 (保底SR)<br><span style="font-size:14px; font-weight:normal;">900 💎</span></button>
     </div>
     
-    <h3 style="border-bottom:1px solid #444; padding-bottom:5px; margin-bottom:10px;">機庫 (已解鎖砲塔)</h3>
-    <div class="grid-list gacha-grid" id="mg-inv"></div>
+    <h3 style="border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:10px;">機庫 (已解鎖砲塔)</h3>
+    <div class="grid-list gacha-grid" id="mg-inv" style="overflow-y:auto; flex:1;"></div>
   </div>
 
-  <!-- Turret Detail -->
   <div id="modal-turret" class="modal" style="z-index:35;">
     <button class="btn modal-close" onclick="UI.closeModal('modal-turret')">X</button>
-    <div style="height:40%; display:flex; justify-content:center; align-items:center; border-bottom:2px solid #333; margin-bottom:15px; position:relative;">
-      <!-- Canvas injected via JS -->
-      <div id="td-canvas-container" style="width:200px; height:200px; position:relative;"></div>
+    <div style="height:35%; display:flex; justify-content:center; align-items:center; border-bottom:2px solid #333; margin-bottom:15px; position:relative;">
+      <canvas id="td-canvas-temp" width="200" height="200"></canvas>
     </div>
     <div style="text-align:center;">
-      <div class="rarity-badge" id="td-rare">SSR</div>
-      <h2 id="td-name" style="margin:5px 0;">Name</h2>
-      <div style="color:var(--gold); font-weight:bold; margin-bottom:15px;" id="td-level">Lv.1</div>
+      <div class="rarity-badge" id="td-rare" style="font-size:14px;">SSR</div>
+      <h2 id="td-name" style="margin:5px 0; font-size:28px;">Name</h2>
+      <div style="color:var(--gold); font-weight:bold; font-size:18px; margin-bottom:15px;" id="td-level">Lv.1</div>
       
       <div class="list-row" style="text-align:left;">
-        <div style="color:#aaa; font-size:12px; margin-bottom:5px;">砲彈特性</div>
-        <div id="td-type" style="color:#fff;">Type</div>
+        <div style="color:#aaa; font-size:13px; margin-bottom:5px;">砲彈特性 (基礎傷害 + 濺射)</div>
+        <div id="td-type" style="color:#fff; font-size:16px;">Type</div>
       </div>
       <div class="list-row" style="text-align:left;">
-        <div style="color:var(--p-color); font-size:12px; margin-bottom:5px;">專屬技能</div>
-        <div id="td-skill" style="font-weight:bold;">Skill</div>
+        <div style="color:var(--p-color); font-size:13px; margin-bottom:5px;">專屬技能</div>
+        <div id="td-skill" style="font-weight:bold; font-size:16px;">Skill</div>
       </div>
       
-      <button class="btn" style="width:100%; padding:15px; font-size:18px; margin-top:10px;" id="td-equip-btn">裝備出戰</button>
+      <button class="btn" style="width:100%; padding:15px; font-size:20px; margin-top:15px;" id="td-equip-btn">裝備出戰</button>
     </div>
   </div>
 
-  <!-- Gacha Animation Fullscreen -->
   <div id="gacha-anim" class="modal">
     <button class="btn modal-close" onclick="Gacha.skip()" id="gacha-skip-btn">跳過</button>
     <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; width:100%;" id="gacha-scene">
@@ -300,15 +291,13 @@
     </div>
   </div>
 
-  <!-- Monster Dex -->
   <div id="modal-dex" class="modal">
     <button class="btn modal-close" onclick="UI.closeModal('modal-dex')">X</button>
     <h2 class="text-glow-magenta">傳說怪獸圖鑑</h2>
-    <div style="text-align:center; margin:10px 0; color:#aaa;">收集進度: <span id="md-count">0</span> / 42</div>
-    <div class="grid-list dex-grid" id="md-list"></div>
+    <div style="text-align:center; margin:10px 0; color:#aaa;">收集進度: <span id="md-count" style="color:#fff; font-weight:bold;">0</span> / 42</div>
+    <div class="grid-list dex-grid" id="md-list" style="overflow-y:auto; flex:1;"></div>
   </div>
 
-  <!-- Mistakes Book -->
   <div id="modal-mistakes" class="modal">
     <button class="btn modal-close" onclick="UI.closeModal('modal-mistakes')">X</button>
     <h2 class="text-glow-cyan">考前錯題本</h2>
@@ -316,20 +305,19 @@
     <div id="mm-list" style="flex:1; overflow-y:auto; padding-bottom:20px;"></div>
   </div>
 
-  <!-- Victory / Defeat Screen -->
   <div id="modal-result" class="modal" style="justify-content:center; text-align:center; background:rgba(0,5,15,0.95);">
     <div class="victory-banner" id="res-title">VICTORY！完全勝利！</div>
     
-    <div style="background:rgba(255,255,255,0.05); border:1px solid #333; border-radius:10px; padding:20px; margin:20px 0;">
-      <div id="res-stage" style="color:#aaa; margin-bottom:10px;">單字征途 第 1 關</div>
-      <div style="font-size:24px; color:var(--gold); font-weight:bold; margin-bottom:10px;" id="res-reward">獲得 +100 💎</div>
-      <div id="res-stats" style="color:#fff;">答對率: 100%</div>
-      <div id="res-new-monster" style="color:var(--s-color); font-weight:bold; margin-top:10px; animation:pulse 1s infinite; display:none;">✨ 解鎖新圖鑑！</div>
+    <div style="background:rgba(255,255,255,0.05); border:1px solid #333; border-radius:10px; padding:30px 20px; margin:20px 0;">
+      <div id="res-stage" style="color:#aaa; font-size:16px; margin-bottom:15px;">單字征途 第 1 關</div>
+      <div style="font-size:32px; color:var(--gold); font-weight:900; margin-bottom:15px;" id="res-reward">獲得 +300 💎</div>
+      <div id="res-stats" style="color:#fff; font-size:18px;">答對率: 100%</div>
+      <div id="res-new-monster" style="color:var(--s-color); font-weight:bold; font-size:18px; margin-top:15px; animation:pulse 1s infinite alternate; display:none;">✨ 解鎖新圖鑑！</div>
     </div>
     
-    <div style="display:flex; gap:15px; justify-content:center; margin-top:30px;">
-      <button class="btn" style="flex:1; border-color:#888; color:#888;" onclick="UI.showMenu()">返回大廳</button>
-      <button class="btn" style="flex:2; font-size:18px;" id="res-next-btn" onclick="Game.nextStage()">下一關</button>
+    <div style="display:flex; gap:15px; justify-content:center; margin-top:20px;">
+      <button class="btn" style="flex:1; padding:15px; font-size:16px; border-color:#888; color:#888;" onclick="UI.showMenu()">返回大廳</button>
+      <button class="btn" style="flex:2; padding:15px; font-size:20px;" id="res-next-btn" onclick="Game.nextStage()">下一關</button>
     </div>
   </div>
 
@@ -337,12 +325,12 @@
 
 <script>
 /* ==========================================================================
-   0. Safety, Debug & Globals
+   0. Safety & Globals
    ========================================================================== */
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 /* ==========================================================================
-   1. Data Configurations (Questions, Turrets, Monsters)
+   1. Data Configurations
    ========================================================================== */
 const Q_RAW = `
 vocab|1|A ___ is an animal kept in the house.|pet|car|cup|pen|0|pet=寵物
@@ -405,7 +393,6 @@ grammar|3|___ from space, the earth looks blue.|Seen|Seeing|Saw|See|0|被動分�
 grammar|3|I prefer walking to ___.|cycling|cycle|cycled|cycles|0|prefer Ving to Ving
 grammar|3|It is no use ___ over spilt milk.|crying|cry|cried|cries|0|It is no use+Ving
 grammar|3|The more you read, the ___ you know.|more|much|most|many|0|The 比較級, the 比較級
-// === 擴充題庫貼上區 ===
 `;
 const QUESTIONS_DB = Q_RAW.trim().split('\n').filter(l => l && !l.startsWith('//')).map(line => {
   const p = line.split('|');
@@ -413,7 +400,6 @@ const QUESTIONS_DB = Q_RAW.trim().split('\n').filter(l => l && !l.startsWith('//
 });
 
 const TURRETS_DB = [
-  // N (0-9)
   { id:0, rare:"N", name:"基礎哨衛砲", clr:"#aaa", b:1, skill:"無特殊效果", type:"kinetic", desc:"發射實體動能彈" },
   { id:1, rare:"N", name:"速射輕機槍", clr:"#8a8", b:2, skill:"攻速快", type:"kinetic", desc:"雙管連發" },
   { id:2, rare:"N", name:"重型加農砲", clr:"#a88", b:1, skill:"單發傷害高", type:"explosive", desc:"大口徑爆破彈" },
@@ -424,7 +410,6 @@ const TURRETS_DB = [
   { id:7, rare:"N", name:"廢鐵投石機", clr:"#999", b:1, skill:"拋物線", type:"lob", desc:"跨越掩體" },
   { id:8, rare:"N", name:"生鏽雷射器", clr:"#a55", b:1, skill:"低階穿透", type:"laser", desc:"細小紅色射線" },
   { id:9, rare:"N", name:"基礎守護者", clr:"#5a5", b:1, skill:"基礎能量彈", type:"energy", desc:"綠色離子球" },
-  // R (10-19)
   { id:10, rare:"R", name:"烈焰噴射器", clr:"#f50", b:1, skill:"持續燃燒", type:"burn", desc:"附加DoT傷害" },
   { id:11, rare:"R", name:"劇毒酸液塔", clr:"#a0f", b:1, skill:"酸液腐蝕", type:"poison", desc:"紫色毒液球" },
   { id:12, rare:"R", name:"寒霜冰凍砲", clr:"#0af", b:1, skill:"減速20%", type:"slow", desc:"冰藍冷卻射線" },
@@ -435,7 +420,6 @@ const TURRETS_DB = [
   { id:17, rare:"R", name:"音波震盪儀", clr:"#8ff", b:1, skill:"範圍擊退", type:"knockback", desc:"可見聲波環" },
   { id:18, rare:"R", name:"追蹤導彈巢", clr:"#8f8", b:4, skill:"自動追蹤", type:"homing", desc:"蜂群飛彈" },
   { id:19, rare:"R", name:"狂熱催化塔", clr:"#f05", b:1, skill:"FEVER加速", type:"fever", desc:"狂熱能量球" },
-  // SR (20-27)
   { id:20, rare:"SR", name:"雷暴特斯拉", clr:"#ff0", b:1, skill:"連鎖閃電彈跳3次", type:"chain", desc:"高壓電弧躍遷" },
   { id:21, rare:"SR", name:"零度領域塔", clr:"#0ff", b:1, skill:"光環緩速場50%", type:"aura_slow", desc:"絕對零度結界" },
   { id:22, rare:"SR", name:"空間黑洞儀", clr:"#80f", b:1, skill:"黑洞牽引聚怪", type:"blackhole", desc:"重力塌縮點" },
@@ -444,32 +428,28 @@ const TURRETS_DB = [
   { id:25, rare:"SR", name:"幻影折射鏡", clr:"#f0f", b:1, skill:"雷射折射攻擊全場", type:"bounce_laser", desc:"粉色稜鏡光束" },
   { id:26, rare:"SR", name:"財神聚寶盆", clr:"#fd0", b:1, skill:"暴擊時爆出大量金幣", type:"gold_crit", desc:"純金元寶射擊" },
   { id:27, rare:"SR", name:"時間靜止器", clr:"#fff", b:1, skill:"機率性時停1秒", type:"timestop", desc:"銀色時空波" },
-  // UR (28-29)
   { id:28, rare:"UR", name:"太陽神光束", clr:"#ffaa00", b:1, skill:"貫穿全場神聖光束", type:"super_laser", desc:"毀滅一切的恆星射線" },
   { id:29, rare:"UR", name:"終焉星爆巨砲", clr:"#ff0055", b:4, skill:"浮游砲與毀滅爆炸", type:"ultimate", desc:"最高維度打擊" }
 ];
 const RARE_COLORS = { 'N': '#aaa', 'R': '#a0f', 'SR': '#fd0', 'UR': '#ff0055' };
 
 const MONSTER_NAMES = [
-  // Swift (0-13)
   "天蛾人","卓柏卡布拉","河童","報喪女妖","地獄犬","鐮鼬","吸血鬼","狼人","溫迪哥","貓妖","飛頭蠻","鵺","隱形鬼","飛龍",
-  // Heavy (14-27)
   "雪男","石像鬼","牛頭人","獨眼巨人","貝希摩斯","哥布林王","巨魔","弗蘭肯斯坦","泥人","大腳怪","樹精","沙蟲","冰霜巨獸","熔岩魔",
-  // Boss (28-41)
   "尼斯湖水怪","九尾妖狐","海怪克拉肯","八岐大蛇","美杜莎","利維坦","邪神克蘇魯","百眼巨人","刻耳柏洛斯","龍王","鳳凰","饕餮","窮奇","混沌"
 ];
+// 削弱怪物難度：大幅降速、降血量
 const MONSTERS_DB = MONSTER_NAMES.map((name, i) => {
   let type = i < 14 ? 'swift' : (i < 28 ? 'heavy' : 'boss');
-    let spd = type==='swift'? 18 : (type==='heavy'? 8 : 5);
+  let spd = type==='swift'? 18 : (type==='heavy'? 8 : 5);
   let hp = type==='swift'? 6 : (type==='heavy'? 22 : 65);
-  let hp = type==='swift'? 15 : (type==='heavy'? 60 : 200);
   let size = type==='swift'? 15 : (type==='heavy'? 28 : 45);
   let clr = type==='swift'? '#f44' : (type==='heavy'? '#889' : '#b0f');
   return { id: i, name, type, spd, hp, size, clr };
 });
 
 /* ==========================================================================
-   2. Core State & Save System (with Auto-Repair)
+   2. Save System (V2 Maintained)
    ========================================================================== */
 const DEFAULT_STATE = {
   coins: 0, maxStageVocab: 1, maxStageGrammar: 1,
@@ -484,36 +464,30 @@ const SaveSys = {
       let s = localStorage.getItem('ED_SAVE_V2');
       if (s) {
         let d = JSON.parse(s);
-        // Deep merge
-        Object.keys(DEFAULT_STATE).forEach(k => {
-          if(d[k] !== undefined) State[k] = d[k];
-        });
+        Object.keys(DEFAULT_STATE).forEach(k => { if(d[k] !== undefined) State[k] = d[k]; });
       }
     } catch(e) { console.error("Save corrupted, using default."); }
     this.save();
   },
-  save() {
-    localStorage.setItem('ED_SAVE_V2', JSON.stringify(State));
-  }
+  save() { localStorage.setItem('ED_SAVE_V2', JSON.stringify(State)); }
 };
 
 /* ==========================================================================
-   3. Audio & Vibration System (Safe Wrapper)
+   3. Audio & Vibration
    ========================================================================== */
 const AudioSys = {
   ctx: null,
   init() {
     if(!this.ctx) {
       try { const AC = window.AudioContext || window.webkitAudioContext; this.ctx = new AC(); }
-      catch(e){ console.warn("Web Audio not supported"); }
+      catch(e){ return; }
     }
     if(this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(()=>{});
   },
   play(freq, type, dur, vol=0.1) {
     if(!this.ctx) return;
     try {
-      let osc = this.ctx.createOscillator();
-      let gain = this.ctx.createGain();
+      let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
       osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
       osc.connect(gain); gain.connect(this.ctx.destination);
       gain.gain.setValueAtTime(vol, this.ctx.currentTime);
@@ -530,44 +504,26 @@ const AudioSys = {
   victory() { [523, 659, 783, 1046].forEach((f,i)=>setTimeout(()=>this.play(f,'square',0.3,0.15), i*150)); }
 };
 
-const Vibrate = (pattern) => {
-  try { if(navigator.vibrate) navigator.vibrate(pattern); } catch(e){}
-};
+const Vibrate = (pattern) => { try { if(navigator.vibrate) navigator.vibrate(pattern); } catch(e){} };
 
 /* ==========================================================================
-   4. Canvas & Graphics Engine
+   4. High-Performance 2.5D Rendering (No shadowBlur)
    ========================================================================== */
-const C = {
-  bg: document.getElementById('bg-canvas'),
-  gm: document.getElementById('game-canvas'),
-  ui: document.getElementById('ui-canvas')
-};
-const CTX = {
-  bg: C.bg.getContext('2d', {alpha: false}),
-  gm: C.gm.getContext('2d'),
-  ui: C.ui.getContext('2d')
-};
-let GW = 0, GH = 0; // Game Width/Height
-let loopId = null;
+const C = { bg: document.getElementById('bg-canvas'), gm: document.getElementById('game-canvas'), ui: document.getElementById('ui-canvas') };
+const CTX = { bg: C.bg.getContext('2d', {alpha: false}), gm: C.gm.getContext('2d'), ui: C.ui.getContext('2d') };
+let GW = 0, GH = 0; let loopId = null;
 
 const resize = () => {
   const w = document.getElementById('app').clientWidth;
   const h = document.getElementById('app').clientHeight;
   const dpr = window.devicePixelRatio || 1;
-  
-  [C.bg, C.gm, C.ui].forEach(c => {
-    c.width = w * dpr; c.height = h * dpr;
-  });
+  [C.bg, C.gm, C.ui].forEach(c => { c.width = w * dpr; c.height = h * dpr; });
   [CTX.bg, CTX.gm, CTX.ui].forEach(ctx => { ctx.scale(dpr, dpr); });
-  
-  GW = w; GH = h * 0.52; // Combat area takes top 52%
+  GW = w; GH = h * 0.55; 
 };
 window.addEventListener('resize', resize);
-const ro = new ResizeObserver(resize);
-ro.observe(document.getElementById('app'));
-resize();
+const ro = new ResizeObserver(resize); ro.observe(document.getElementById('app')); resize();
 
-// Fast pseudo-glow (avoids shadowBlur)
 function drawGlow(ctx, x, y, r, color, alpha=1) {
   ctx.globalAlpha = alpha; ctx.fillStyle = color;
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
@@ -576,104 +532,148 @@ function drawGlow(ctx, x, y, r, color, alpha=1) {
   ctx.globalAlpha = 1;
 }
 
+// 2.5D 高顏值機甲基座（無 shadowBlur）
 function drawMechaBase(ctx, x, y, hpRatio=1) {
   ctx.save(); ctx.translate(x, y);
-  ctx.fillStyle = '#1a1a2a'; ctx.strokeStyle = 'var(--p-color)'; ctx.lineWidth = 2;
-  // Tier 1 (bottom)
-  ctx.beginPath(); ctx.moveTo(-35, 0); ctx.lineTo(35, 0); ctx.lineTo(45, 20); ctx.lineTo(-45, 20); ctx.closePath(); ctx.fill(); ctx.stroke();
-  // Tier 2
-  ctx.beginPath(); ctx.moveTo(-25, 0); ctx.lineTo(25, 0); ctx.lineTo(30, -15); ctx.lineTo(-30, -15); ctx.closePath(); ctx.fill(); ctx.stroke();
-  // Reactor
+  
+  // 底部裝甲 (暗面)
+  ctx.fillStyle = '#0f0f1a'; 
+  ctx.beginPath(); ctx.moveTo(-45, 20); ctx.lineTo(45, 20); ctx.lineTo(35, 0); ctx.lineTo(-35, 0); ctx.closePath(); ctx.fill();
+  
+  // 正面中層裝甲
+  ctx.fillStyle = '#1a1a2a'; 
+  ctx.beginPath(); ctx.moveTo(-35, 0); ctx.lineTo(35, 0); ctx.lineTo(25, -10); ctx.lineTo(-25, -10); ctx.closePath(); ctx.fill();
+  
+  // 頂面亮色裝甲
+  ctx.fillStyle = '#2a2a3a'; 
+  ctx.beginPath(); ctx.moveTo(-25, -10); ctx.lineTo(25, -10); ctx.lineTo(20, -18); ctx.lineTo(-20, -18); ctx.closePath(); ctx.fill();
+
+  // 液壓支架細節
+  ctx.fillStyle = '#445';
+  ctx.fillRect(-30, 0, 8, 15); ctx.fillRect(22, 0, 8, 15);
+  ctx.fillStyle = '#223';
+  ctx.fillRect(-28, 5, 4, 15); ctx.fillRect(24, 5, 4, 15);
+  
+  // 發光反應爐核心
   let rColor = hpRatio > 0.3 ? '#0ff' : '#f00';
   drawGlow(ctx, 0, -5, 8, rColor, 0.8 + Math.sin(Date.now()*0.005)*0.2);
   
-  // Shield Arc
+  // 保護罩特效
   if(hpRatio > 0) {
     ctx.strokeStyle = `rgba(0, 255, 255, ${Math.max(0.1, hpRatio*0.8)})`;
+    ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(0, -10, 60, -Math.PI*0.6, Math.PI*0.6); ctx.stroke();
   }
   ctx.restore();
 }
 
+// 2.5D 重裝砲管與後座力
 function drawTurretGun(ctx, tid, x, y, angle, recoil, scale=1) {
   const def = TURRETS_DB[tid];
   ctx.save(); ctx.translate(x, y); ctx.rotate(angle); ctx.scale(scale, scale);
   
-  // Body
-  ctx.fillStyle = '#334'; ctx.fillRect(-15, -15, 30, 30);
-  ctx.strokeStyle = def.clr; ctx.lineWidth = 2; ctx.strokeRect(-15, -15, 30, 30);
+  // 側翼裝甲護板
+  ctx.fillStyle = '#223'; ctx.fillRect(-18, -18, 36, 36);
+  ctx.fillStyle = '#334'; ctx.fillRect(-12, -12, 24, 24);
+  ctx.strokeStyle = def.clr; ctx.lineWidth = 2; ctx.strokeRect(-12, -12, 24, 24);
   
-  // Barrels
-  ctx.fillStyle = '#556';
+  // 粗獷重型砲管
   for(let i=0; i<def.b; i++) {
-    let by = (i - (def.b-1)/2) * 8;
-    ctx.fillRect(15 - recoil, by - 3, 25, 6);
-    ctx.strokeStyle = def.clr; ctx.strokeRect(15 - recoil, by - 3, 25, 6);
+    let by = (i - (def.b-1)/2) * 10;
+    // 砲管主體
+    ctx.fillStyle = '#445';
+    ctx.fillRect(10 - recoil, by - 4, 30, 8);
+    // 制退器與散熱孔
+    ctx.fillStyle = '#112';
+    ctx.fillRect(35 - recoil, by - 5, 6, 10);
+    ctx.fillStyle = def.clr;
+    ctx.fillRect(15 - recoil, by - 1, 15, 2);
+    
+    // 開火十字閃光
+    if(recoil > 5) {
+      ctx.fillStyle = def.clr;
+      ctx.fillRect(45 - recoil, by - 1, 15, 2);
+      ctx.fillRect(52 - recoil, by - 8, 2, 16);
+    }
   }
   
-  // UR Aura
+  // UR 光環
   if(def.rare === 'UR') {
     ctx.rotate(Date.now()*0.002);
-    ctx.strokeStyle = def.clr; ctx.beginPath(); ctx.arc(0,0, 25, 0, Math.PI*2);
-    ctx.setLineDash([10, 10]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = def.clr; ctx.beginPath(); ctx.arc(0,0, 30, 0, Math.PI*2);
+    ctx.setLineDash([15, 10]); ctx.stroke(); ctx.setLineDash([]);
   }
   ctx.restore();
 }
 
+// 2.5D 傳說怪獸 (陰影+起伏動態+獨特特徵)
 function drawMonster(ctx, def, x, y, anim, enrage=0) {
   ctx.save(); ctx.translate(x, y);
   
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.beginPath(); ctx.ellipse(0, def.size/2, def.size, def.size/3, 0, 0, Math.PI*2); ctx.fill();
+  // 接地橢圓陰影
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.beginPath(); ctx.ellipse(0, def.size/1.5, def.size, def.size/3, 0, 0, Math.PI*2); ctx.fill();
   
-  let bob = Math.sin(anim * 10) * (def.type==='swift'?4:2);
+  // 走路上下起伏
+  let bob = Math.sin(anim * 10) * (def.type==='swift'?5:3);
   ctx.translate(0, bob);
-  
-  // Enrage glow
-  if(enrage > 0) drawGlow(ctx, 0, 0, def.size*1.2, '#f00', 0.3);
   
   ctx.fillStyle = def.clr;
   if(def.type === 'swift') {
+    // 迅捷系：尖銳飛翼
     ctx.beginPath(); ctx.moveTo(-def.size, -def.size/2); ctx.lineTo(def.size, 0); ctx.lineTo(-def.size, def.size/2); ctx.closePath(); ctx.fill();
+    // 飛翼細節
+    ctx.fillStyle = '#333'; ctx.beginPath(); ctx.moveTo(-def.size*0.8, -def.size/3); ctx.lineTo(def.size*0.5, 0); ctx.lineTo(-def.size*0.8, def.size/3); ctx.closePath(); ctx.fill();
+    // 發光複眼
+    drawGlow(ctx, def.size/4, -3, 3, '#0f0'); drawGlow(ctx, def.size/4, 3, 3, '#0f0');
   } else if(def.type === 'heavy') {
-    ctx.fillRect(-def.size/2, -def.size, def.size, def.size*1.5);
-  } else { // Boss
-    ctx.beginPath(); ctx.arc(0, -def.size/3, def.size, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#fff'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(def.size, -def.size); ctx.stroke();
+    // 重裝系：厚重裝甲與盾牌
+    ctx.fillRect(-def.size/2, -def.size, def.size, def.size*1.8);
+    // 肩甲/盾牌
+    ctx.fillStyle = '#556'; ctx.fillRect(-def.size/2 - 5, -def.size - 5, def.size+10, 10);
+    ctx.fillRect(def.size/2, -def.size/2, 10, def.size); // 前方持盾
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(def.size/3, -def.size/2, 4, 0, Math.PI*2); ctx.fill();
+  } else { 
+    // 魔王系：巨大體型與逆向旋轉科技光環
+    ctx.beginPath(); ctx.arc(0, -def.size/4, def.size, 0, Math.PI*2); ctx.fill();
+    // 核心眼
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(def.size/3, -def.size/3, def.size/4, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = enrage>0 ? '#f00' : '#000'; ctx.beginPath(); ctx.arc(def.size/3 + 4, -def.size/3, def.size/8, 0, Math.PI*2); ctx.fill();
+    // 逆向科技光環
+    ctx.save(); ctx.rotate(-anim * 2);
+    ctx.strokeStyle = '#0ff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, -def.size/4, def.size*1.3, 0.2, Math.PI*1.8); ctx.stroke();
+    ctx.restore();
   }
-  // Eye
-  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(def.size/4, -def.size/4, def.size/5, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = enrage>0 ? '#f00' : '#000'; ctx.beginPath(); ctx.arc(def.size/4 + 2, -def.size/4, def.size/10, 0, Math.PI*2); ctx.fill();
   ctx.restore();
 }
 
 /* ==========================================================================
-   5. Game Logic (Entities, Combat)
+   5. Game Logic (Balanced 12s, Splash, High Dmg)
    ========================================================================== */
 class Particle {
   constructor(x, y, vx, vy, clr, life) { this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.clr=clr; this.life=life; this.maxLife=life; }
   update(dt) { this.x+=this.vx*dt; this.y+=this.vy*dt; this.life-=dt; }
-  draw(ctx) { drawGlow(ctx, this.x, this.y, 2, this.clr, Math.max(0, this.life/this.maxLife)); }
+  draw(ctx) { drawGlow(ctx, this.x, this.y, 3, this.clr, Math.max(0, this.life/this.maxLife)); }
 }
 
 class Projectile {
   constructor(x, y, tx, ty, clr, dmg, isEnemy=false) {
     this.x=x; this.y=y; this.dmg=dmg; this.clr=clr; this.isEnemy=isEnemy; this.active=true;
     let dx = tx-x, dy = ty-y; let dist = Math.hypot(dx,dy) || 1;
-    let spd = isEnemy ? 150 : 500;
+    let spd = isEnemy ? 150 : 600;
     this.vx = (dx/dist) * spd; this.vy = (dy/dist) * spd;
   }
   update(dt) { this.x += this.vx*dt; this.y += this.vy*dt; if(this.x<0 || this.x>GW || this.y<0 || this.y>GH) this.active=false; }
-  draw(ctx) { drawGlow(ctx, this.x, this.y, 4, this.clr, 0.8); }
+  draw(ctx) { drawGlow(ctx, this.x, this.y, 5, this.clr, 0.9); }
 }
 
 let Env = {
   particles: [], projs: [], enemies: [],
-  spawnExplosion(x, y, clr, count=8) {
+  spawnExplosion(x, y, clr, count=10) {
     for(let i=0; i<count; i++) {
-      if(this.particles.length > 60) this.particles.shift();
-      let a = Math.random()*Math.PI*2, v = Math.random()*50+30;
+      if(this.particles.length > 80) this.particles.shift();
+      let a = Math.random()*Math.PI*2, v = Math.random()*60+40;
       this.particles.push(new Particle(x, y, Math.cos(a)*v, Math.sin(a)*v, clr, 0.4));
     }
   },
@@ -684,14 +684,14 @@ let Combat = {
   active: false, route: '', level: 1,
   hp: 100, maxHp: 100, combo: 0, feverTimer: 0, overheatTimer: 0,
   waveTot: 0, waveSpawned: 0, waveKilled: 0, spawnTimer: 0,
-  qTimer: 5, qMax: 5, qActive: null, isAnswering: false,
+  qTimer: 12, qMax: 12, qActive: null, isAnswering: false,
   recoil: 0, stats: { ansTot:0, ansCor:0 },
   
   start(route, level) {
     AudioSys.init();
     this.active = true; this.route = route; this.level = level;
     this.hp = 100; this.combo = 0; this.feverTimer = 0; this.overheatTimer = 0;
-    this.waveTot = 6 + Math.floor(level/5); this.waveSpawned = 0; this.waveKilled = 0; this.spawnTimer = 1.5;
+    this.waveTot = 10 + Math.floor(level/3); this.waveSpawned = 0; this.waveKilled = 0; this.spawnTimer = 2;
     this.stats = { ansTot:0, ansCor:0 }; this.isAnswering = false;
     Env.clear();
     
@@ -702,22 +702,23 @@ let Combat = {
   
   nextQ() {
     this.isAnswering = false;
-    let diff = this.level <= 30 ? 1 : (this.level <= 70 ? 2 : 3);
+    // 平緩難度分級
+    let diff = this.level <= 40 ? 1 : (this.level <= 75 ? 2 : 3);
     let pool = QUESTIONS_DB.filter(q => q.route === this.route && q.diff === diff);
     if(pool.length===0) pool = QUESTIONS_DB;
     let q = pool[Math.floor(Math.random() * pool.length)];
     
-    // Shuffle
     let arr = [0,1,2,3];
     for(let i=3; i>0; i--) { let j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
     
     this.qActive = { ...q, shuffledIdx: arr };
-    this.qTimer = 12; this.qMax = 12;
+    this.qTimer = 12; // 放寬至 12 秒
+    
     document.getElementById('qa-q').textContent = q.q;
     arr.forEach((origIdx, i) => {
       let btn = document.getElementById(`qa-${i}`);
       btn.textContent = q.opts[origIdx];
-      btn.className = 'opt-btn'; // reset styles
+      btn.className = 'opt-btn'; 
     });
   },
   
@@ -729,7 +730,7 @@ let Combat = {
     let q = this.qActive;
     let origIdx = btnIdx >= 0 ? q.shuffledIdx[btnIdx] : -1;
     let isCor = origIdx === q.ans;
-    let tTaken = 5 - this.qTimer;
+    let tTaken = 12 - this.qTimer;
     
     this.stats.ansTot++;
     
@@ -738,56 +739,45 @@ let Combat = {
       if(btnIdx>=0) document.getElementById(`qa-${btnIdx}`).classList.add('correct');
       AudioSys.correct();
       
-      let crit = tTaken <= 2;
-      Vibrate(crit ? [40, 30, 60] : 30);
+      // 5 秒內答對觸發暴擊
+      let crit = tTaken <= 5;
+      Vibrate(crit ? [40, 30, 60] : [30]);
       
       this.combo++;
-      if(this.combo >= 5 && tTaken <= 3) this.feverTimer = 5;
-      
-      // Fire
-     let crit = tTaken <= 5;
-      Vibrate(crit ? [40, 30, 60] : 30);
-      
-      this.combo++;
-      if(this.combo >= 3) this.feverTimer = 6;
+      if(this.combo >= 3 && crit) this.feverTimer = 3;
       
       let tDef = TURRETS_DB[State.equippedTurret];
       let tLvl = State.turretLvls[State.equippedTurret];
-      let dmg = (25 + tLvl*10) * (crit?2:1) * (this.hp<=30?2.5:1);
+      // 大幅強化基礎傷害：(25 + lvl*10)
+      let dmg = (25 + tLvl*10) * (crit?2:1);
+      this.recoil = 15;
       
-      // Intercept enemy proj
       let ep = Env.projs.find(p => p.isEnemy);
-      if(ep) { ep.active=false; Env.spawnExplosion(ep.x, ep.y, '#f0f'); AudioSys.shoot(); }
+      if(ep) { ep.active=false; Env.spawnExplosion(ep.x, ep.y, '#0ff'); AudioSys.shoot(); }
       else if(Env.enemies.length > 0) {
         let tgt = Env.enemies[0];
         Env.projs.push(new Projectile(50, GH-40, tgt.x, tgt.y, tDef.clr, dmg, false));
         AudioSys.shoot();
       }
-      
       setTimeout(() => { if(this.active) this.nextQ(); }, 300);
       
     } else {
       if(btnIdx>=0) document.getElementById(`qa-${btnIdx}`).classList.add('wrong');
-      // Show correct answer
       let corBtnIdx = q.shuffledIdx.indexOf(q.ans);
       if(corBtnIdx>=0) document.getElementById(`qa-${corBtnIdx}`).classList.add('correct');
       
-      AudioSys.wrong(); Vibrate(150);
-      this.combo = 0; this.overheatTimer = 0.3;
+      AudioSys.wrong(); Vibrate([150]);
+      this.combo = 0; 
+      // 縮短冷卻懲罰，移除暴走機制
+      this.overheatTimer = 0.3;
       
-      // Flash UI
       document.getElementById('overheat-overlay').style.display = 'block';
       setTimeout(()=> document.getElementById('overheat-overlay').style.display = 'none', 300);
       
-      // Enrage enemies
-      Env.enemies.forEach(e => e.enrage = 1.5);
-      
-      // Save mistake
       if(!State.mistakes.find(m => m.q === q.q)) {
         State.mistakes.push({ q: q.q, ans: q.opts[q.ans], exp: q.exp });
         SaveSys.save();
       }
-      
       setTimeout(() => { if(this.active) this.nextQ(); }, 1000);
     }
   },
@@ -795,8 +785,7 @@ let Combat = {
   update(dt) {
     if(!this.active) return;
     
-    // Timers
-    if(this.recoil > 0) this.recoil -= dt*50; if(this.recoil<0) this.recoil=0;
+    if(this.recoil > 0) this.recoil -= dt*80; if(this.recoil<0) this.recoil=0;
     if(this.feverTimer > 0) this.feverTimer -= dt;
     document.getElementById('fever-text').style.display = this.feverTimer>0 ? 'block' : 'none';
     
@@ -804,51 +793,46 @@ let Combat = {
       this.overheatTimer -= dt;
     } else if(!this.isAnswering) {
       this.qTimer -= dt;
-      if(this.qTimer <= 0) this.answer(-1); // Timeout
+      if(this.qTimer <= 0) this.answer(-1);
     }
     
-    // Spawning
     this.spawnTimer -= dt;
     if(this.waveSpawned < this.waveTot && this.spawnTimer <= 0) {
-      this.spawnTimer = 1.5;
+      this.spawnTimer = 2; // 產怪變慢
       this.waveSpawned++;
       let mIdx = Math.floor(Math.random() * 42);
       if(!State.dex.includes(mIdx)) { State.dex.push(mIdx); SaveSys.save(); UI.updateBadges(); }
       let def = MONSTERS_DB[mIdx];
-      let hMult = 1 + this.level*0.05;
+      let hMult = 1 + this.level*0.02;
       Env.enemies.push({...def, x: GW+30, y: GH-30-(Math.random()*20), anim: 0, curHp: def.hp*hMult, enrage: 0});
     }
     
-    // Enemies
     for(let i=Env.enemies.length-1; i>=0; i--) {
       let e = Env.enemies[i];
       e.anim += dt;
-      if(e.enrage > 0) e.enrage -= dt;
       
-      // Stop to shoot if Boss
-      if(e.type === 'boss' && e.x < GW-50 && Math.random()<0.005) {
-        Env.projs.push(new Projectile(e.x, e.y, 50, GH-40, '#f0f', 20, true));
+      if(e.type === 'boss' && e.x < GW-50 && Math.random()<0.003) {
+        Env.projs.push(new Projectile(e.x, e.y, 50, GH-40, '#f0f', 10, true));
       } else {
-        let spd = e.spd * (e.enrage>0 ? 1.5 : 1);
-        e.x -= spd * dt;
+        e.x -= e.spd * dt;
       }
       
+      // 撞牆扣血減半
       if(e.x < 60) {
-        this.hp -= (e.type==='boss'?25:(e.type==='heavy'?15:5));
-        AudioSys.hit(); Vibrate(100);
+        this.hp -= (e.type==='boss'?12.5:(e.type==='heavy'?7.5:2.5));
+        AudioSys.hit(); Vibrate([100]);
         Env.spawnExplosion(50, e.y, e.clr);
         Env.enemies.splice(i,1); this.waveKilled++;
       }
     }
     
-    // Projs
     for(let i=Env.projs.length-1; i>=0; i--) {
       let p = Env.projs[i]; p.update(dt);
       if(!p.active) { Env.projs.splice(i,1); continue; }
       
       if(p.isEnemy) {
         if(p.x < 60) {
-          this.hp -= p.dmg; AudioSys.hit(); Vibrate(100);
+          this.hp -= p.dmg; AudioSys.hit(); Vibrate([100]);
           Env.spawnExplosion(50, p.y, p.clr); p.active=false;
         }
       } else {
@@ -858,24 +842,35 @@ let Combat = {
             e.curHp -= p.dmg;
             Env.spawnExplosion(p.x, p.y, p.clr);
             p.active = false;
-            if(e.curHp <= 0) {
-               Env.enemies.splice(j,1); this.waveKilled++;
-               AudioSys.hit(); State.coins += 5; // small drop
-            }
+            
+            // 70px 濺射傷害 (50% 傷害)
+            Env.enemies.forEach(e2 => {
+              if (e2 !== e && Math.hypot(e2.x - p.x, e2.y - p.y) <= 70) {
+                e2.curHp -= p.dmg * 0.5;
+              }
+            });
             break;
           }
         }
       }
     }
+    
+    // 清理死亡怪物
+    for(let j=Env.enemies.length-1; j>=0; j--) {
+      if(Env.enemies[j].curHp <= 0) {
+        Env.enemies.splice(j,1); this.waveKilled++;
+        AudioSys.hit(); State.coins += 5;
+      }
+    }
+    
     Env.particles.forEach(p => p.update(dt));
     Env.particles = Env.particles.filter(p => p.life>0);
     
-    // Check End
     if(this.hp <= 0) {
       this.active = false; UI.showResult(false);
     } else if(this.waveKilled >= this.waveTot) {
       this.active = false;
-      State.coins += 100;
+      State.coins += 300; // 高額通關獎勵
       if(this.route==='vocab' && this.level===State.maxStageVocab) State.maxStageVocab++;
       if(this.route==='grammar' && this.level===State.maxStageGrammar) State.maxStageGrammar++;
       SaveSys.save(); UI.showResult(true);
@@ -885,7 +880,6 @@ let Combat = {
   draw(ctx) {
     if(!this.active) return;
     
-    // HUD Update
     let hpBar = document.getElementById('combat-hp-fill');
     hpBar.style.width = `${Math.max(0, this.hp)}%`;
     hpBar.style.background = this.hp>50 ? '#0f0' : (this.hp>20 ? '#ff0' : '#f00');
@@ -895,17 +889,13 @@ let Combat = {
     tBar.style.width = `${(Math.max(0,this.qTimer)/this.qMax)*100}%`;
     tBar.style.background = this.overheatTimer>0 ? 'var(--err)' : 'var(--p-color)';
     
-    // Draw Game
     ctx.clearRect(0,0,GW,GH);
-    
-    // Base & Turret
     drawMechaBase(ctx, 40, GH-20, this.hp/100);
     let aimX = Env.enemies.length>0 ? Env.enemies[0].x : GW;
     let aimY = Env.enemies.length>0 ? Env.enemies[0].y : GH-40;
     let angle = Math.atan2(aimY - (GH-40), aimX - 40);
     drawTurretGun(ctx, State.equippedTurret, 40, GH-40, angle, this.recoil);
     
-    // Entities
     Env.enemies.forEach(e => drawMonster(ctx, e, e.x, e.y, e.anim, e.enrage));
     Env.projs.forEach(p => p.draw(ctx));
     Env.particles.forEach(p => p.draw(ctx));
@@ -913,23 +903,23 @@ let Combat = {
 };
 
 /* ==========================================================================
-   6. Main Menu Background (Live Demo)
+   6. Main Menu Background (Clear, Bright, Sci-Fi)
    ========================================================================== */
 let Demo = {
-  anim: 0, projs: [], enemies: [], parts: [],
+  anim: 0, projs: [], enemies: [], parts: [], stars: Array(30).fill(0).map(()=>({x:Math.random(), y:Math.random(), s:Math.random()*1.5+0.5})),
   update(dt) {
     if(GW === 0) return;
     this.anim += dt;
-    if(Math.random() < 0.02 && this.enemies.length < 5) {
+    if(Math.random() < 0.01 && this.enemies.length < 3) {
       let d = MONSTERS_DB[Math.floor(Math.random()*42)];
       this.enemies.push({x: GW+20, y: GH-20-(Math.random()*40), def: d, anim:0});
     }
-    if(Math.random() < 0.05 && this.enemies.length>0) {
+    if(Math.random() < 0.03 && this.enemies.length>0) {
       this.projs.push({x: 50, y: GH-50, tx: this.enemies[0].x, ty: this.enemies[0].y});
     }
     
     for(let i=this.enemies.length-1; i>=0; i--) {
-      let e = this.enemies[i]; e.anim+=dt; e.x -= 30*dt;
+      let e = this.enemies[i]; e.anim+=dt; e.x -= 20*dt;
       if(e.x < 50) this.enemies.splice(i,1);
     }
     for(let i=this.projs.length-1; i>=0; i--) {
@@ -938,7 +928,7 @@ let Demo = {
       p.x += (dx/dist)*400*dt; p.y += (dy/dist)*400*dt;
       if(p.x>GW) this.projs.splice(i,1);
       else {
-        let hit = this.enemies.findIndex(e => Math.hypot(p.x-e.x, p.y-e.y)<20);
+        let hit = this.enemies.findIndex(e => Math.hypot(p.x-e.x, p.y-e.y)<25);
         if(hit>=0) {
           for(let k=0;k<5;k++) this.parts.push({x:p.x, y:p.y, vx:(Math.random()-0.5)*100, vy:(Math.random()-0.5)*100, l:0.3, ml:0.3});
           this.projs.splice(i,1); this.enemies.splice(hit,1);
@@ -950,19 +940,31 @@ let Demo = {
   },
   draw(ctx) {
     ctx.clearRect(0,0,GW,GH*2);
-    // Grid
-    ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)'; ctx.lineWidth = 1;
-    let scroll = (this.anim*20) % 40;
-    for(let i=-40; i<GW; i+=40) { ctx.beginPath(); ctx.moveTo(i+scroll, 0); ctx.lineTo(i+scroll, GH*2); ctx.stroke(); }
+    // 深藍科幻宇宙底色 (0.55 透明度)
+    ctx.fillStyle = 'rgba(5, 10, 25, 0.55)';
+    ctx.fillRect(0,0,GW,GH*2);
     
-    // Entities
-    ctx.globalAlpha = 0.3; // Make it look like background
+    // 流動星光
+    ctx.fillStyle = '#fff';
+    this.stars.forEach(s => {
+      let sx = ((s.x + this.anim*0.05*s.s) % 1) * GW;
+      let sy = s.y * GH;
+      ctx.globalAlpha = Math.sin(this.anim*2 + s.x*10)*0.5 + 0.5;
+      ctx.beginPath(); ctx.arc(sx, sy, s.s, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    
+    // 科幻網格地板
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.15)'; ctx.lineWidth = 1;
+    let scroll = (this.anim*20) % 40;
+    for(let i=-40; i<GW; i+=40) { ctx.beginPath(); ctx.moveTo(i+scroll, GH-100); ctx.lineTo(i+scroll-100, GH*2); ctx.stroke(); }
+    for(let y=GH-100; y<GH*2; y+=30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(GW, y); ctx.stroke(); }
+    
     drawMechaBase(ctx, 40, GH-20);
     drawTurretGun(ctx, State.equippedTurret, 40, GH-40, 0, 0);
     this.enemies.forEach(e => drawMonster(ctx, e.def, e.x, e.y, e.anim));
-    this.projs.forEach(p => drawGlow(ctx, p.x, p.y, 3, '#0ff', 1));
-    this.parts.forEach(p => drawGlow(ctx, p.x, p.y, 2, '#0ff', p.l/p.ml));
-    ctx.globalAlpha = 1;
+    this.projs.forEach(p => drawGlow(ctx, p.x, p.y, 4, '#0ff', 1));
+    this.parts.forEach(p => drawGlow(ctx, p.x, p.y, 3, '#0ff', p.l/p.ml));
   }
 };
 
@@ -972,7 +974,6 @@ let Demo = {
 const UI = {
   activeModal: null,
   init() {
-    // Bind buttons
     document.querySelectorAll('.opt-btn').forEach((btn, i) => {
       btn.addEventListener('pointerdown', (e) => { e.preventDefault(); Combat.answer(i); });
     });
@@ -994,11 +995,8 @@ const UI = {
     document.getElementById('prog-bar-grammar').style.width = `${State.maxStageGrammar}%`;
     
     document.getElementById('dex-prog-txt').textContent = `${State.dex.length}/42`;
+    document.getElementById('gacha-badge').style.display = State.coins >= 100 ? 'block' : 'none';
     
-    let cost = 100; // single pull
-    document.getElementById('gacha-badge').style.display = State.coins >= cost ? 'block' : 'none';
-    
-    // Update Hangar UI text
     let t = TURRETS_DB[State.equippedTurret];
     document.getElementById('hangar-name').innerHTML = `${t.name} <span style="font-size:14px; color:var(--gold);">Lv.${State.turretLvls[t.id]}</span>`;
     document.getElementById('hangar-rare').textContent = t.rare;
@@ -1006,28 +1004,11 @@ const UI = {
     document.getElementById('hangar-skill').textContent = `技能: ${t.skill}`;
   },
   
-  showMenu() {
-    this.closeAll();
-    document.getElementById('main-menu').classList.add('active');
-    this.updateBadges();
-  },
-  showCombat() {
-    this.closeAll();
-    document.getElementById('combat-ui').classList.add('active');
-  },
-  closeAll() {
-    document.querySelectorAll('.screen, .modal').forEach(el => el.classList.remove('active'));
-    this.activeModal = null;
-  },
-  openModal(id) {
-    if(this.activeModal) document.getElementById(this.activeModal).classList.remove('active');
-    document.getElementById(id).classList.add('active');
-    this.activeModal = id;
-  },
-  closeModal(id) {
-    document.getElementById(id).classList.remove('active');
-    this.activeModal = null;
-  },
+  showMenu() { this.closeAll(); document.getElementById('main-menu').classList.add('active'); this.updateBadges(); },
+  showCombat() { this.closeAll(); document.getElementById('combat-ui').classList.add('active'); },
+  closeAll() { document.querySelectorAll('.screen, .modal').forEach(el => el.classList.remove('active')); this.activeModal = null; },
+  openModal(id) { if(this.activeModal) document.getElementById(this.activeModal).classList.remove('active'); document.getElementById(id).classList.add('active'); this.activeModal = id; },
+  closeModal(id) { document.getElementById(id).classList.remove('active'); this.activeModal = null; },
   
   openStageSelect(route) {
     let max = route === 'vocab' ? State.maxStageVocab : State.maxStageGrammar;
@@ -1040,45 +1021,30 @@ const UI = {
       let btn = document.createElement('div');
       btn.className = 'stage-btn';
       if(i <= max) {
-        btn.classList.add('unlocked');
-        btn.textContent = i;
+        btn.classList.add('unlocked'); btn.textContent = i;
         if(i === selStage) btn.classList.add('current');
-        btn.onclick = () => {
-          grid.querySelectorAll('.stage-btn').forEach(b=>b.classList.remove('current'));
-          btn.classList.add('current');
-          selStage = i;
-        };
+        btn.onclick = () => { grid.querySelectorAll('.stage-btn').forEach(b=>b.classList.remove('current')); btn.classList.add('current'); selStage = i; };
       } else {
-        btn.classList.add('locked');
-        btn.innerHTML = '<span style="font-size:12px;">🔒</span>';
+        btn.classList.add('locked'); btn.innerHTML = '<span style="font-size:14px;">🔒</span>';
       }
       grid.appendChild(btn);
     }
-    
-    document.getElementById('ms-start-btn').onclick = () => {
-      this.closeModal('modal-stage');
-      Combat.start(route, selStage);
-    };
+    document.getElementById('ms-start-btn').onclick = () => { this.closeModal('modal-stage'); Combat.start(route, selStage); };
     this.openModal('modal-stage');
   },
   
   openGacha() {
     document.getElementById('mg-coins').textContent = State.coins;
-    let inv = document.getElementById('mg-inv');
-    inv.innerHTML = '';
-    
+    let inv = document.getElementById('mg-inv'); inv.innerHTML = '';
     TURRETS_DB.forEach(t => {
-      let d = document.createElement('div');
-      d.className = 'card-item';
+      let d = document.createElement('div'); d.className = 'card-item';
       let has = State.turrets.includes(t.id);
       if(!has) d.classList.add('locked');
       if(State.equippedTurret === t.id) d.style.borderColor = '#0f0';
       
-      d.innerHTML = `
-        <div style="color:${RARE_COLORS[t.rare]}; font-size:12px; font-weight:bold;">${t.rare}</div>
-        <div style="font-size:12px; margin:5px 0;">${has ? t.name : '???'}</div>
-        ${has ? `<div style="font-size:10px; color:var(--gold);">Lv.${State.turretLvls[t.id]}</div>` : ''}
-      `;
+      d.innerHTML = `<div style="color:${RARE_COLORS[t.rare]}; font-size:14px; font-weight:bold;">${t.rare}</div>
+                     <div style="font-size:13px; margin:8px 0; font-weight:bold;">${has ? t.name : '???'}</div>
+                     ${has ? `<div style="font-size:12px; color:var(--gold);">Lv.${State.turretLvls[t.id]}</div>` : ''}`;
       if(has) d.onclick = () => this.openTurretDetail(t.id, true);
       inv.appendChild(d);
     });
@@ -1100,47 +1066,36 @@ const UI = {
       btn.textContent = "裝備出戰"; btn.disabled = false;
       btn.onclick = () => {
         State.equippedTurret = tid; SaveSys.save(); UI.updateBadges();
-        this.closeModal('modal-turret');
-        if(fromGacha) this.openGacha();
+        this.closeModal('modal-turret'); if(fromGacha) this.openGacha();
       };
     }
-    this.openModal('modal-turret');
-    this.previewTurretId = tid; // For render loop
+    this.openModal('modal-turret'); this.previewTurretId = tid;
   },
   
   openDex() {
     document.getElementById('md-count').textContent = State.dex.length;
-    let list = document.getElementById('md-list');
-    list.innerHTML = '';
+    let list = document.getElementById('md-list'); list.innerHTML = '';
     MONSTERS_DB.forEach(m => {
       let has = State.dex.includes(m.id);
-      let d = document.createElement('div');
-      d.className = 'card-item';
+      let d = document.createElement('div'); d.className = 'card-item';
       if(!has) d.classList.add('locked');
-      
-      d.innerHTML = `
-        <div style="color:${has?m.clr:'#555'}; font-weight:bold; font-size:16px;">${has?m.name:'???'}</div>
-        <div style="font-size:12px; color:#aaa; margin-top:5px;">${m.type}</div>
-      `;
+      d.innerHTML = `<div style="color:${has?m.clr:'#555'}; font-weight:bold; font-size:18px;">${has?m.name:'???'}</div>
+                     <div style="font-size:14px; color:#aaa; margin-top:5px;">${m.type}</div>`;
       list.appendChild(d);
     });
     this.openModal('modal-dex');
   },
   
   openMistakes() {
-    let list = document.getElementById('mm-list');
-    list.innerHTML = '';
+    let list = document.getElementById('mm-list'); list.innerHTML = '';
     if(State.mistakes.length === 0) {
-      list.innerHTML = '<div style="text-align:center; color:#555; padding:20px;">尚無錯題紀錄，繼續保持！</div>';
+      list.innerHTML = '<div style="text-align:center; color:#555; padding:20px; font-size:16px;">尚無錯題紀錄，繼續保持！</div>';
     } else {
       State.mistakes.forEach(m => {
-        let d = document.createElement('div');
-        d.className = 'list-row';
-        d.innerHTML = `
-          <div style="font-weight:bold; margin-bottom:8px;">${m.q}</div>
-          <div style="color:var(--succ); font-size:14px; margin-bottom:4px;">正確: ${m.ans}</div>
-          <div style="color:var(--p-color); font-size:14px;">💡 ${m.exp}</div>
-        `;
+        let d = document.createElement('div'); d.className = 'list-row';
+        d.innerHTML = `<div style="font-weight:bold; font-size:16px; margin-bottom:10px;">${m.q}</div>
+                       <div style="color:var(--succ); font-size:15px; margin-bottom:5px;">正確: ${m.ans}</div>
+                       <div style="color:var(--p-color); font-size:14px;">💡 ${m.exp}</div>`;
         list.appendChild(d);
       });
     }
@@ -1152,7 +1107,7 @@ const UI = {
     document.getElementById('res-title').textContent = win ? "VICTORY！完全勝利！" : "DEFEAT！防線崩潰！";
     document.getElementById('res-title').style.color = win ? "var(--gold)" : "var(--err)";
     document.getElementById('res-stage').textContent = `${Combat.route==='vocab'?'單字征途':'文法試煉'} 第 ${Combat.level} 關`;
-    document.getElementById('res-reward').textContent = win ? "獲得 +100 💎" : "獲得 +0 💎";
+    document.getElementById('res-reward').textContent = win ? "獲得 +300 💎" : "獲得 +0 💎"; // 更新獎勵顯示
     
     let acc = Combat.stats.ansTot > 0 ? Math.round((Combat.stats.ansCor/Combat.stats.ansTot)*100) : 0;
     document.getElementById('res-stats').textContent = `答對率: ${acc}%`;
@@ -1166,38 +1121,30 @@ const UI = {
   
   previewTurretId: -1,
   renderModals() {
-    // Render Hangar on Main Menu
+    // 渲染主畫面機甲
     if(!this.activeModal || this.activeModal === 'modal-gacha') {
       let hc = document.getElementById('hangar-canvas');
-      if(!hc) {
-        hc = document.createElement('canvas');
-        hc.id = 'hangar-canvas';
-        document.getElementById('hangar-canvas-container').appendChild(hc);
+      if(hc) {
+        let hctx = hc.getContext('2d');
+        hctx.clearRect(0,0,hc.width,hc.height);
+        hctx.save(); hctx.translate(hc.width/2, hc.height/2 + 20);
+        drawMechaBase(hctx, 0, 0);
+        drawTurretGun(hctx, State.equippedTurret, 0, -20, Math.sin(Date.now()*0.002)*0.1, 0, 1.3);
+        hctx.restore();
       }
-      hc.width = hc.clientWidth; hc.height = hc.clientHeight;
-      let hctx = hc.getContext('2d');
-      hctx.clearRect(0,0,hc.width,hc.height);
-      hctx.save(); hctx.translate(hc.width/2, hc.height/2);
-      drawMechaBase(hctx, 0, 20);
-      drawTurretGun(hctx, State.equippedTurret, 0, 0, Math.sin(Date.now()*0.001)*0.2, 0, 1.5);
-      hctx.restore();
     }
     
-    // Render Turret Detail Preview
+    // 渲染預覽彈出視窗機甲
     if(this.activeModal === 'modal-turret' && this.previewTurretId >= 0) {
       let tc = document.getElementById('td-canvas-temp');
-      if(!tc) {
-        tc = document.createElement('canvas');
-        tc.id = 'td-canvas-temp'; tc.style.width='100%'; tc.style.height='100%'; tc.style.position='absolute';
-        document.getElementById('td-canvas-container').appendChild(tc);
+      if(tc) {
+        let tctx = tc.getContext('2d');
+        tctx.clearRect(0,0,tc.width,tc.height);
+        tctx.save(); tctx.translate(tc.width/2, tc.height/2 + 30);
+        drawMechaBase(tctx, 0, 0);
+        drawTurretGun(tctx, this.previewTurretId, 0, -20, (Date.now()*0.002) % (Math.PI*2), 0, 1.5);
+        tctx.restore();
       }
-      tc.width = tc.clientWidth; tc.height = tc.clientHeight;
-      let tctx = tc.getContext('2d');
-      tctx.clearRect(0,0,tc.width,tc.height);
-      tctx.save(); tctx.translate(tc.width/2, tc.height/2);
-      drawMechaBase(tctx, 0, 20);
-      drawTurretGun(tctx, this.previewTurretId, 0, 0, (Date.now()*0.002) % (Math.PI*2), 0, 1.5);
-      tctx.restore();
     }
   }
 };
@@ -1241,8 +1188,7 @@ const Gacha = {
   showResultCards(arr) {
     document.getElementById('g-circle').style.display = 'none';
     let grid = document.getElementById('g-result-grid');
-    grid.style.display = 'grid';
-    grid.innerHTML = '';
+    grid.style.display = 'grid'; grid.innerHTML = '';
     
     let maxRare = 'N';
     arr.forEach((d, i) => {
@@ -1251,10 +1197,10 @@ const Gacha = {
         let card = document.createElement('div');
         card.className = 'card-item'; card.style.borderColor = d.clr;
         card.style.animation = 'pulse 0.3s ease-out';
-        card.innerHTML = `<div style="font-size:12px; color:${RARE_COLORS[d.rare]}">${d.rare}</div><div style="font-weight:bold; font-size:14px;">${d.name}</div>`;
+        card.innerHTML = `<div style="font-size:14px; color:${RARE_COLORS[d.rare]}">${d.rare}</div><div style="font-weight:bold; font-size:16px;">${d.name}</div>`;
         grid.appendChild(card);
         if(d.rare === 'UR' || d.rare === 'SR') { AudioSys.gachaSR(); Vibrate([50,30,50,30,100]); }
-        else { AudioSys.gachaR(); Vibrate(30); }
+        else { AudioSys.gachaR(); Vibrate([30]); }
       }, i * 150);
     });
     
@@ -1266,76 +1212,57 @@ const Gacha = {
     document.getElementById('gacha-skip-btn').onclick = () => { UI.openGacha(); };
   },
   
-  skip() {
-    clearTimeout(this.animTid);
-    UI.openGacha();
-  }
+  skip() { clearTimeout(this.animTid); UI.openGacha(); }
 };
 
 const Game = {
-  addTestCoins() { State.coins += 5000; SaveSys.save(); UI.updateBadges(); },
   claimDaily() {
     let now = Date.now();
     if(now - State.lastDaily > 86400000) {
-      State.coins += 200; State.lastDaily = now; SaveSys.save(); UI.updateBadges();
-      alert("領取每日補給 200 💎");
-    } else {
-      alert("今天已經領取過囉！");
-    }
+      State.coins += 300; State.lastDaily = now; SaveSys.save(); UI.updateBadges();
+      alert("領取每日補給 300 💎");
+    } else { alert("今天已經領取過囉！"); }
   },
   nextStage() {
     UI.closeAll();
     let n = Combat.level + 1;
-    if(n > 100) n = 100; // max cap
+    if(n > 100) n = 100;
     Combat.start(Combat.route, n);
   }
 };
 
 /* ==========================================================================
-   8. Main Engine Loop (Safe FPS)
+   8. Main Engine Loop
    ========================================================================== */
 let lastTime = 0, fpsTimer=0, frames=0;
 
 function gameLoop(timestamp) {
-  if(!GW || !GH) { lastTime=timestamp; requestAnimationFrame(gameLoop); return; } // wait for resize
+  if(!GW || !GH) { lastTime=timestamp; requestAnimationFrame(gameLoop); return; }
   
   let dt = (timestamp - lastTime) / 1000;
-  if(dt > 0.1) dt = 0.1; // cap if tab inactive
+  if(dt > 0.1) dt = 0.1;
   lastTime = timestamp;
   
-  // FPS
   frames++; fpsTimer+=dt;
   if(fpsTimer >= 1) { document.getElementById('fps-counter').textContent = `FPS: ${frames}`; frames=0; fpsTimer=0; }
   
-  // Update & Draw Background (Main Menu Demo)
   if(document.getElementById('main-menu').classList.contains('active')) {
-    Demo.update(dt);
-    Demo.draw(CTX.bg);
-  } else {
-    CTX.bg.clearRect(0,0,GW,GH*2);
-  }
+    Demo.update(dt); Demo.draw(CTX.bg);
+  } else { CTX.bg.clearRect(0,0,GW,GH*2); }
   
-  // Update & Draw Combat
   if(Combat.active) {
-    Combat.update(dt);
-    Combat.draw(CTX.gm);
-  } else {
-    CTX.gm.clearRect(0,0,GW,GH*2);
-  }
+    Combat.update(dt); Combat.draw(CTX.gm);
+  } else { CTX.gm.clearRect(0,0,GW,GH*2); }
   
-  // Draw UI Modals Canvas elements
   UI.renderModals();
-  
   loopId = requestAnimationFrame(gameLoop);
 }
 
-// Lifecycle handling (Visibility API)
 document.addEventListener("visibilitychange", () => {
   if(document.hidden && loopId) { cancelAnimationFrame(loopId); loopId=null; }
   else if(!document.hidden && !loopId) { lastTime = performance.now(); loopId = requestAnimationFrame(gameLoop); }
 });
 
-// Boot
 SaveSys.load();
 UI.init();
 lastTime = performance.now();
