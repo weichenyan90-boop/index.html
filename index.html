@@ -1,1245 +1,744 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>英單防線：傳說塔防</title>
-<style>
-  :root {
-    --p-color: #0ff;
-    --s-color: #f0f;
-    --bg-dark: #050510;
-    --ui-bg: rgba(10, 10, 25, 0.85);
-    --btn-bg: #1a1a3a;
-    --err: #ff3366;
-    --succ: #33ffaa;
-    --gold: #ffd700;
-  }
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; touch-action: manipulation; }
-  body { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100dvh; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; color: white; }
-  
-  /* Full viewport responsive canvas */
-  #app { position: relative; width: 100vw; height: 100dvh; background: var(--bg-dark); overflow: hidden; }
-  
-  /* Canvas Layers (Fill entire screen) */
-  canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; pointer-events: none; }
-  #bg-canvas { z-index: 1; }
-  #game-canvas { z-index: 5; }
-  #ui-canvas { z-index: 15; }
-  
-  /* Responsive UI Wrapper (Centers UI on Desktop) */
-  .ui-wrapper { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 600px; height: 100dvh; display: flex; flex-direction: column; z-index: 10; pointer-events: none; }
-  
-  /* UI Screens */
-  .screen { width: 100%; height: 100%; display: none; flex-direction: column; pointer-events: none; }
-  
-  /* Modals */
-  .modal-overlay { position: absolute; top:0; left:0; width:100vw; height:100dvh; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px); z-index: 30; display:none; justify-content:center; align-items:center; }
-  .modal { width: 100%; max-width: 600px; height: 100dvh; display: flex; flex-direction: column; padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom)) 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; pointer-events: auto; background: var(--bg-dark); box-shadow: 0 0 30px rgba(0,255,255,0.1); position: relative; }
-  
-  .active { display: flex !important; }
-  
-  /* Global Components */
-  .btn { pointer-events: auto; background: var(--btn-bg); border: 2px solid var(--p-color); color: var(--p-color); padding: clamp(10px, 2vh, 15px) clamp(15px, 3vw, 20px); border-radius: 8px; font-weight: bold; cursor: pointer; transition: transform 0.1s, filter 0.1s; text-align: center; font-size: clamp(14px, 2vw, 18px); flex-shrink: 0; }
-  .btn:active { transform: scale(0.95); filter: brightness(1.2); }
-  .btn:disabled { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
-  .modal-close { position: absolute; top: max(15px, env(safe-area-inset-top)); right: 15px; z-index: 40; width: 45px; height: 45px; display:flex; justify-content:center; align-items:center; border-radius: 50%; padding:0; font-size: 20px; background: rgba(255,0,0,0.2); border-color: var(--err); color: var(--err); }
-  
-  h1, h2, h3 { margin: 0; text-align: center; flex-shrink: 0; }
-  .text-glow-cyan { color: var(--p-color); text-shadow: 0 0 5px var(--p-color); }
-  .text-glow-gold { color: var(--gold); text-shadow: 0 0 5px var(--gold); }
-  .text-glow-magenta { color: var(--s-color); text-shadow: 0 0 5px var(--s-color); }
-  .fps { font-size: 12px; color: #aaa; position: absolute; top: env(safe-area-inset-top); right: 10px; z-index: 50; }
-  
-  /* --- Main Menu --- */
-  #main-menu { padding-top: env(safe-area-inset-top); padding-bottom: max(15px, env(safe-area-inset-bottom)); justify-content: space-between; pointer-events: auto; }
-  .commander-bar { display: flex; flex-direction: column; padding: 15px; background: linear-gradient(180deg, rgba(15,15,30,1), rgba(15,15,30,0.5)); border-bottom: 2px solid var(--p-color); flex-shrink: 0; }
-  .cmd-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .rank-title { font-size: clamp(20px, 4vw, 26px); font-weight: 900; background: linear-gradient(90deg, #0ff, #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .coins-display { font-size: clamp(18px, 3vw, 22px); font-weight: bold; color: var(--gold); display: flex; align-items: center; gap: 5px; }
-  .cmd-actions { display: flex; justify-content: space-between; gap: 10px; }
-  
-  .hangar { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; margin: 5px 0; cursor: pointer; }
-  .hangar-title { position: absolute; top: 10px; font-size: clamp(14px, 2vw, 18px); color: #0ff; font-weight: bold; letter-spacing: 2px; }
-  #hangar-canvas-container { width: clamp(200px, 50vw, 300px); height: clamp(180px, 40vh, 250px); position: relative; }
-  #hangar-canvas { width: 100%; height: 100%; display: block; }
-  .hangar-info { text-align: center; margin-top: 5px; background: rgba(0,0,0,0.7); padding: 10px 25px; border-radius: 20px; border: 1px solid #444; }
-  .rarity-badge { display: inline-block; padding: 3px 12px; border-radius: 4px; font-size: 14px; font-weight: bold; margin-bottom: 5px; color:#000; box-shadow: 0 0 10px currentColor; }
-  
-  .campaign-container { display: flex; flex-direction: column; gap: 12px; padding: 0 20px; flex-shrink: 0; }
-  .campaign-card { position: relative; height: clamp(80px, 12vh, 100px); border-radius: 12px; overflow: hidden; border: 2px solid #555; display: flex; align-items: center; padding: 15px; cursor: pointer; background: linear-gradient(135deg, #1a1a2a, #2a2a4a); box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: transform 0.1s; }
-  .campaign-card:active { transform: scale(0.97); }
-  .campaign-card.vocab { border-color: var(--p-color); }
-  .campaign-card.grammar { border-color: var(--s-color); }
-  .c-card-content { z-index: 2; width: 100%; }
-  .c-card-title { font-size: clamp(20px, 4vw, 24px); font-weight: 900; margin-bottom: 5px; }
-  .c-card-prog { font-size: 14px; color: #ccc; display: flex; justify-content: space-between; }
-  .prog-bar-bg { width: 100%; height: 6px; background: #222; border-radius: 3px; margin-top: 8px; overflow: hidden; }
-  .prog-bar-fill { height: 100%; transition: width 0.3s; }
-  .vocab .prog-bar-fill, .vocab .c-card-title { background: var(--p-color); color: var(--p-color); }
-  .grammar .prog-bar-fill, .grammar .c-card-title { background: var(--s-color); color: var(--s-color); }
-  
-  .sys-btn-container { display: flex; justify-content: space-between; padding: 0 30px; margin-top: 15px; flex-shrink: 0; }
-  .sys-btn { width: clamp(65px, 15vw, 80px); aspect-ratio: 1; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 14px; font-weight: bold; border: 3px solid; cursor: pointer; position: relative; background: radial-gradient(circle, #223, #001); box-shadow: 0 4px 10px rgba(0,0,0,0.8); transition: transform 0.1s; }
-  .sys-btn.gacha { border-color: var(--gold); color: var(--gold); }
-  .sys-btn.dex { border-color: var(--s-color); color: var(--s-color); }
-  .sys-btn:active { transform: scale(0.9); }
-  .sys-btn-icon { font-size: clamp(24px, 5vw, 32px); margin-bottom: 2px; }
-  .badge-dot { position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; background: red; border-radius: 50%; border: 2px solid #000; animation: pulse 1s infinite; display: none; }
-  
-  /* --- Combat UI --- */
-  #combat-ui { justify-content: flex-end; padding-bottom: max(15px, env(safe-area-inset-bottom)); }
-  .combat-top-hud { position: absolute; top: max(15px, env(safe-area-inset-top)); width: 100%; padding: 0 20px; display: flex; justify-content: space-between; z-index: 20; }
-  .base-hp-container { display: flex; align-items: center; gap: 8px; }
-  .base-hp-bar { width: clamp(120px, 30vw, 200px); height: 16px; background: rgba(0,0,0,0.8); border: 2px solid #555; border-radius: 8px; overflow: hidden; }
-  .base-hp-fill { height: 100%; background: #0f0; transition: width 0.2s, background-color 0.2s; }
-  
-  .qa-panel { height: clamp(250px, 45vh, 350px); background: var(--ui-bg); border-top: 4px solid var(--p-color); border-radius: 20px 20px 0 0; display: flex; flex-direction: column; padding: 20px; pointer-events: auto; z-index: 20; backdrop-filter: blur(10px); }
-  .timer-bar-container { width: 100%; height: 12px; background: #222; border-radius: 6px; margin-bottom: 15px; overflow: hidden; border: 1px solid #444; flex-shrink:0; }
-  .timer-bar { height: 100%; background: var(--p-color); width: 100%; transition: width 0.1s linear, background 0.3s; }
-  .question-box { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(20px, 4vw, 26px); font-weight: bold; padding: 0 10px; margin-bottom: 15px; text-shadow: 1px 1px 4px #000; line-height: 1.4; color: #fff; }
-  .options-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-gap: 15px; height: 60%; flex-shrink: 0; }
-  .opt-btn { background: linear-gradient(to bottom, #2a2a4a, #1a1a3a); border: 2px solid #557; border-radius: 12px; color: white; font-size: clamp(16px, 3vw, 20px); font-weight: bold; padding: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
-  .opt-btn:active { transform: scale(0.95); background: #335; }
-  .opt-btn.correct { background: var(--succ); border-color: #fff; color: #000; box-shadow: 0 0 15px var(--succ); }
-  .opt-btn.wrong { background: var(--err); border-color: #fff; color: #fff; box-shadow: 0 0 15px var(--err); }
-  
-  /* --- Modals specific --- */
-  .grid-list { display: grid; gap: 15px; padding: 15px 5px; overflow-y: auto; align-content: start; flex: 1; }
-  .gacha-grid { grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); }
-  .dex-grid { grid-template-columns: repeat(2, 1fr); }
-  .stage-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
-  
-  .card-item { background: linear-gradient(180deg, #1a1a2a, #111122); border: 2px solid #335; border-radius: 10px; padding: 12px; text-align: center; cursor: pointer; transition: transform 0.1s; flex-shrink: 0; min-height: 80px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); display: flex; flex-direction: column; justify-content: center; align-items: center; }
-  .card-item:active { transform: scale(0.95); }
-  .card-item.locked { filter: grayscale(1) brightness(0.4); pointer-events: none; }
-  
-  .list-row { background: #112; border: 1px solid #445; border-radius: 8px; padding: 15px; margin-bottom: 12px; flex-shrink: 0; }
-  
-  /* Animations */
-  @keyframes pulse { 0% { transform: scale(0.9); } 100% { transform: scale(1.1); } }
-  @keyframes spin { 100% { transform: rotate(360deg); } }
-  @keyframes slideDownBounce { 0% { transform: translateY(-100vh); } 70% { transform: translateY(20px); } 100% { transform: translateY(0); } }
-  
-  .summon-circle { width: 250px; height: 250px; border: 8px dashed var(--gold); border-radius: 50%; animation: spin 2s linear infinite; display: flex; justify-content: center; align-items: center; position: relative; margin: auto; }
-  .summon-core { width: 80px; height: 80px; background: #fff; border-radius: 50%; box-shadow: 0 0 80px #fff; animation: pulse 0.5s infinite alternate; }
-  
-  #overheat-overlay { position: absolute; top:0; left:0; width:100vw; height:100dvh; background: rgba(255,0,50,0.3); pointer-events: none; display: none; z-index: 25; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>英單防線：神話塔防</title>
+    <style>
+        :root {
+            --ui-blue: #00d2ff;
+            --ui-dark: rgba(10, 15, 30, 0.85);
+            --ui-panel: rgba(20, 30, 60, 0.9);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+        body { 
+            background: #050510; 
+            color: white; 
+            overflow: hidden; 
+            display: flex; 
+            justify-content: center;
+            height: 100dvh;
+            width: 100vw;
+        }
+        /* 電腦寬螢幕兩側邊框裝飾與限制寬度 */
+        #app {
+            width: 100%;
+            max-width: 540px;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            background: #020205;
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.1);
+            border-left: 1px solid rgba(0,210,255,0.2);
+            border-right: 1px solid rgba(0,210,255,0.2);
+            z-index: 1;
+        }
+        @media (min-width: 541px) {
+            body::before, body::after {
+                content: ''; position: absolute; top: 0; width: calc(50vw - 270px); height: 100%;
+                background: repeating-linear-gradient(45deg, #050510 0%, #050510 10px, #0a0a1a 10px, #0a0a1a 20px);
+                opacity: 0.5; z-index: 0; pointer-events: none;
+            }
+            body::before { left: 0; border-right: 2px solid var(--ui-blue); }
+            body::after { right: 0; border-left: 2px solid var(--ui-blue); }
+        }
+
+        /* Canvas 圖層 */
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #bg-canvas { z-index: -2; }
+        #game-canvas { z-index: 5; }
+        #fx-canvas { z-index: 6; }
+        
+        /* 介面共用 */
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; z-index: 10;
+            padding-top: var(--safe-top); padding-bottom: var(--safe-bottom);
+            transition: opacity 0.3s;
+        }
+        .hidden { opacity: 0; pointer-events: none; display: none !important; }
+        
+        /* 頂部狀態列 */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            z-index: 20; height: 60px; flex-shrink: 0;
+        }
+        .stats { display: flex; gap: 10px; align-items: center; text-shadow: 0 2px 4px black; }
+        .badge { background: rgba(0,210,255,0.2); border: 1px solid var(--ui-blue); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: var(--ui-blue); }
+        .currency { color: #ffd700; font-weight: bold; display: flex; align-items: center; gap: 4px;}
+        .top-btns button { background: var(--ui-panel); border: 1px solid #555; color: white; padding: 5px 10px; border-radius: 4px; margin-left: 5px; font-size: 12px; cursor: pointer; }
+        
+        /* 大廳 */
+        #menu-screen { justify-content: space-between; }
+        .hangar-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .hangar-title { font-size: 20px; font-weight: 900; letter-spacing: 2px; text-shadow: 0 0 10px var(--ui-blue); margin-bottom: -20px; z-index: 1; }
+        #hangar-canvas { width: 220px; height: 170px; pointer-events: auto; cursor: pointer; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8)); }
+        .tower-info-tag { background: var(--ui-dark); border: 1px solid #00ff88; padding: 5px 15px; border-radius: 20px; font-size: 12px; color: #00ff88; margin-top: -10px; z-index: 1; }
+        
+        .campaign-board { display: flex; flex-direction: column; gap: 15px; padding: 20px; margin-bottom: 20px; }
+        .route-btn {
+            background: linear-gradient(135deg, rgba(20,40,80,0.9), rgba(10,20,40,0.9));
+            border: 2px solid var(--ui-blue); border-radius: 12px; padding: 20px;
+            color: white; font-size: 18px; font-weight: bold; text-align: left;
+            position: relative; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .route-btn::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent); transform: rotate(45deg); animation: shine 3s infinite; pointer-events: none; }
+        @keyframes shine { 0% { left: -100%; } 100% { left: 100%; } }
+        .route-progress { font-size: 12px; color: #aaa; margin-top: 5px; font-weight: normal; }
+        
+        .bottom-nav { display: flex; justify-content: space-between; padding: 15px; }
+        .nav-btn { background: var(--ui-dark); border: 1px solid #444; border-radius: 8px; padding: 10px 15px; color: #ddd; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        
+        /* 戰鬥介面 */
+        #combat-screen { justify-content: space-between; }
+        .battle-hud { display: flex; justify-content: space-between; padding: 10px 20px; z-index: 20; }
+        .hp-bar-bg { width: 150px; height: 12px; background: rgba(0,0,0,0.8); border: 1px solid #555; border-radius: 6px; overflow: hidden; margin-top: 5px; }
+        .hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #00ff88, #00bfff); transition: width 0.2s; }
+        
+        .quiz-panel {
+            background: linear-gradient(to top, rgba(10,15,30,1) 60%, rgba(10,15,30,0.8));
+            border-top: 2px solid var(--ui-blue); padding: 15px; padding-bottom: calc(15px + var(--safe-bottom));
+            display: flex; flex-direction: column; gap: 10px; z-index: 20;
+        }
+        .question-text { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 10px; min-height: 54px; display: flex; align-items: center; justify-content: center; line-height: 1.3;}
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .option-btn { background: var(--ui-panel); border: 1px solid #447; border-radius: 8px; padding: 15px 10px; color: white; font-size: 16px; min-height: 55px; transition: 0.1s; }
+        .option-btn:active { transform: scale(0.95); background: #225; }
+        .option-btn.correct { background: #008800; border-color: #00ff00; }
+        .option-btn.wrong { background: #880000; border-color: #ff0000; }
+        .option-btn.ink-blurred { filter: blur(4px) brightness(0.5); pointer-events: none; }
+        
+        .timer-bar { height: 4px; background: #333; border-radius: 2px; overflow: hidden; margin-bottom: 5px; }
+        .timer-fill { height: 100%; background: #00d2ff; width: 100%; transform-origin: left; }
+        
+        /* 彈窗共通 (全螢幕捲動) */
+        .modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100;
+            display: flex; flex-direction: column;
+            padding: calc(20px + var(--safe-top)) 20px calc(20px + var(--safe-bottom)) 20px;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0; }
+        .modal-title { font-size: 22px; color: var(--ui-blue); font-weight: bold; }
+        .close-btn { background: #c0392b; color: white; border: none; padding: 5px 15px; border-radius: 4px; font-weight: bold; }
+        
+        /* 選關網格 */
+        .stage-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding-bottom: 50px; }
+        .stage-node {
+            aspect-ratio: 1; background: var(--ui-dark); border: 1px solid #444; border-radius: 8px;
+            display: flex; justify-content: center; align-items: center; font-weight: bold;
+            color: #666; flex-shrink: 0;
+        }
+        .stage-node.unlocked { color: white; border-color: var(--ui-blue); background: rgba(0,210,255,0.1); box-shadow: 0 0 10px rgba(0,210,255,0.2) inset;}
+        .stage-node.cleared { color: #ffd700; border-color: #ffd700; background: rgba(255,215,0,0.1); }
+        .stage-node.boss { border-style: dashed; border-width: 2px; }
+
+        /* 圖鑑與商店卡片 */
+        .card-list { display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
+        .card-item {
+            background: var(--ui-panel); border: 1px solid #555; border-radius: 8px; padding: 10px;
+            display: flex; gap: 15px; align-items: center; flex-shrink: 0; min-height: 95px;
+        }
+        .card-icon-box { width: 70px; height: 70px; background: rgba(0,0,0,0.5); border-radius: 6px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; position: relative;}
+        .card-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .card-name { font-weight: bold; font-size: 16px; margin-bottom: 4px; display: flex; justify-content: space-between;}
+        .card-desc { font-size: 12px; color: #aaa; line-height: 1.4; }
+        
+        /* 轉蛋動畫層 */
+        #gacha-fx-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        #gacha-skip { position: absolute; top: calc(20px + var(--safe-top)); right: 20px; z-index: 201; background: rgba(255,255,255,0.2); border:1px solid white; color:white; padding:5px 15px; border-radius:15px;}
+        .gacha-result-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 90%; max-width: 480px; z-index: 201;}
+        .gacha-card { 
+            aspect-ratio: 3/4; background: #111; border: 2px solid #333; border-radius: 8px; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; transform: translateY(20px) scale(0.8); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .gacha-card.reveal { opacity: 1; transform: translateY(0) scale(1); }
+        .r-N { border-color: #aaa; box-shadow: 0 0 10px #aaa inset;}
+        .r-R { border-color: #b055ff; box-shadow: 0 0 15px #b055ff inset;}
+        .r-SR { border-color: #ffd700; box-shadow: 0 0 20px #ffd700 inset;}
+        .r-UR { border-image: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3) 1; box-shadow: 0 0 25px rgba(255,255,255,0.8) inset;}
+        
+        /* 勝利結算 */
+        #victory-banner {
+            position: absolute; top: 30%; left: 0; width: 100%; background: linear-gradient(90deg, transparent, rgba(255,215,0,0.8), transparent);
+            padding: 20px 0; text-align: center; transform: scaleY(0); transition: transform 0.3s; z-index: 150;
+        }
+        #victory-banner.show { transform: scaleY(1); }
+        .vic-title { font-size: 36px; font-weight: 900; color: white; text-shadow: 0 0 15px #ffd700, 2px 2px 0 #000; letter-spacing: 5px; }
+        .vic-rewards { margin-top: 15px; font-size: 20px; color: #00ff88; font-weight: bold; text-shadow: 1px 1px 0 #000;}
+        .vic-btns { margin-top: 30px; display: flex; justify-content: center; gap: 20px; }
+        .vic-btns button { padding: 12px 25px; border-radius: 25px; font-size: 16px; font-weight: bold; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .btn-lobby { background: #555; color: white; }
+        .btn-next { background: #ffd700; color: black; }
+
+        /* FPS & 提示 */
+        #fps-counter { position: absolute; top: calc(65px + var(--safe-top)); right: 10px; color: #0f0; font-size: 10px; font-family: monospace; z-index: 99; opacity: 0.7;}
+        .floating-text { position: absolute; pointer-events: none; font-weight: bold; text-shadow: 1px 1px 2px black; z-index: 80; animation: floatUp 1s forwards; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
+        
+        .overheat-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,0,0,0.2); z-index:15; pointer-events:none; display:none; }
+    </style>
 </head>
 <body>
-
-<div id="app">
-  <canvas id="bg-canvas"></canvas>
-  <canvas id="game-canvas"></canvas>
-  <canvas id="ui-canvas"></canvas>
-  
-  <div class="fps" id="fps-counter">FPS: 60</div>
-  <div id="overheat-overlay"></div>
-
-  <!-- UI Wrapper for constraint -->
-  <div class="ui-wrapper">
-    
-    <!-- ================= SCREEN: MAIN MENU ================= -->
-    <div id="main-menu" class="screen active">
-      <div class="commander-bar">
-        <div class="cmd-top">
-          <div class="rank-title" id="cmd-rank">見習詞彙兵</div>
-          <div style="display:flex; gap:15px; align-items:center;">
-            <div class="coins-display"><span style="font-size:24px;">💎</span> <span id="hud-coins">0</span></div>
-            <button class="btn" style="padding: 5px 10px; font-size:16px; background:#333; border-color:#aaa; color:#fff;" onclick="UI.openModal('modal-save')">⚙️</button>
-          </div>
-        </div>
-        <div class="cmd-actions">
-          <button class="btn" style="flex:1; padding:12px;" onclick="UI.openMistakes()">考前錯題本 <span id="mistake-cnt" style="color:var(--err);">(0)</span></button>
-          <button class="btn" style="flex:1; padding:12px; border-color:var(--gold); color:var(--gold);" onclick="Game.claimDaily()" id="btn-daily">每日補給</button>
-        </div>
-      </div>
-      
-      <div class="hangar" onclick="UI.openTurretDetail(State.equippedTurret)">
-        <div class="hangar-title">ACTIVE DEFENSE SYSTEM</div>
-        <div id="hangar-canvas-container">
-          <canvas id="hangar-canvas"></canvas>
-        </div>
-        <div class="hangar-info">
-          <div class="rarity-badge" id="hangar-rare">N</div>
-          <div style="font-size:clamp(18px, 4vw, 22px); font-weight:bold; margin-bottom:5px;" id="hangar-name">基礎哨衛砲 <span style="font-size:16px; color:var(--gold);">Lv.1</span></div>
-          <div style="font-size:14px; color:var(--p-color);" id="hangar-skill">技能: 無特殊效果</div>
-        </div>
-      </div>
-      
-      <div class="campaign-container">
-        <div class="campaign-card vocab" onclick="UI.openStageSelect('vocab')">
-          <div class="c-card-content">
-            <div class="c-card-title">單字征途</div>
-            <div class="c-card-prog"><span id="prog-txt-vocab">第 1 關 / 初級</span> <span></span></div>
-            <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-bar-vocab" style="width: 1%;"></div></div>
-          </div>
-        </div>
-        <div class="campaign-card grammar" onclick="UI.openStageSelect('grammar')">
-          <div class="c-card-content">
-            <div class="c-card-title">文法試煉</div>
-            <div class="c-card-prog"><span id="prog-txt-grammar">第 1 關 / 初級</span> <span></span></div>
-            <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-bar-grammar" style="width: 1%;"></div></div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="sys-btn-container">
-        <div class="sys-btn gacha" onclick="UI.openGacha()">
-          <div class="sys-btn-icon">🎰</div>商店
-          <div class="badge-dot" id="gacha-badge"></div>
-        </div>
-        <div class="sys-btn dex" onclick="UI.openDex()">
-          <div class="sys-btn-icon">📖</div>圖鑑
-          <div style="font-size:12px; color:#ccc; margin-top:2px;" id="dex-prog-txt">0/42</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ================= SCREEN: COMBAT UI ================= -->
-    <div id="combat-ui" class="screen">
-      <div class="combat-top-hud">
-        <div class="base-hp-container">
-          <span style="font-size:24px;">🛡️</span>
-          <div class="base-hp-bar"><div class="base-hp-fill" id="combat-hp-fill"></div></div>
-        </div>
-        <div style="text-align:right; text-shadow: 1px 1px 3px #000;">
-          <div id="combat-stage-info" style="font-size:16px; font-weight:900; color:var(--p-color);">單字 第1關</div>
-          <div id="combat-enemies" style="font-weight:bold; font-size:18px; color:#fff;">剩餘: 0</div>
-        </div>
-      </div>
-      
-      <div id="fever-text" style="position:absolute; top:35%; left:50%; transform:translate(-50%,-50%); font-size:clamp(40px, 10vw, 60px); font-weight:900; color:var(--gold); display:none; z-index:25; animation:pulse 0.2s infinite alternate; text-shadow: 0 0 20px #f00;">CRITICAL!</div>
-      
-      <div class="qa-panel" id="qa-panel">
-        <div class="timer-bar-container"><div class="timer-bar" id="qa-timer"></div></div>
-        <div class="question-box" id="qa-q">Question text here?</div>
-        <div class="options-grid">
-          <button class="opt-btn" id="qa-0">A</button>
-          <button class="opt-btn" id="qa-1">B</button>
-          <button class="opt-btn" id="qa-2">C</button>
-          <button class="opt-btn" id="qa-3">D</button>
-        </div>
-      </div>
-    </div>
-
-  </div> <!-- End UI Wrapper -->
-
-  <!-- ================= MODALS ================= -->
-  <div id="modal-stage" class="modal-overlay">
-    <div class="modal">
-      <button class="btn modal-close" onclick="UI.closeModal('modal-stage')">✕</button>
-      <h2 class="text-glow-cyan" id="ms-title">選擇關卡</h2>
-      <div class="grid-list stage-grid" id="ms-grid"></div>
-      <div style="margin-top: 15px; text-align: center; flex-shrink:0;">
-        <button class="btn" style="width:100%; padding:20px; font-size:22px;" id="ms-start-btn">出戰最新關卡</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-gacha" class="modal-overlay">
-    <div class="modal">
-      <button class="btn modal-close" onclick="UI.closeModal('modal-gacha')">✕</button>
-      <h2 class="text-glow-gold">轉蛋商店</h2>
-      <div style="text-align:center; margin:15px 0; font-size:20px;">持有: <span id="mg-coins" style="color:var(--gold); font-weight:bold;">0</span> 💎</div>
-      
-      <div style="display:flex; gap:15px; margin-bottom: 20px; flex-shrink:0;">
-        <button class="btn" style="flex:1; padding:20px;" onclick="Gacha.pull(1)">單抽<br><span style="font-size:14px; font-weight:normal;">100 💎</span></button>
-        <button class="btn" style="flex:1; border-color:var(--s-color); color:var(--s-color); padding:20px;" onclick="Gacha.pull(10)">10連抽 (保底SR)<br><span style="font-size:14px; font-weight:normal;">900 💎</span></button>
-      </div>
-      
-      <h3 style="border-bottom:2px solid #444; padding-bottom:10px; margin-bottom:10px; flex-shrink:0;">機庫 (已解鎖砲塔)</h3>
-      <div class="grid-list gacha-grid" id="mg-inv"></div>
-    </div>
-  </div>
-
-  <div id="modal-turret" class="modal-overlay" style="z-index:35;">
-    <div class="modal" style="height:auto; max-height:90dvh;">
-      <button class="btn modal-close" onclick="UI.closeModal('modal-turret')">✕</button>
-      <div style="height:250px; display:flex; justify-content:center; align-items:center; border-bottom:2px solid #333; margin-bottom:20px; position:relative; flex-shrink:0;">
-        <canvas id="td-canvas-temp" width="300" height="250"></canvas>
-      </div>
-      <div style="text-align:center; flex-shrink:0;">
-        <div class="rarity-badge" id="td-rare" style="font-size:16px;">SSR</div>
-        <h2 id="td-name" style="margin:10px 0; font-size:32px;">Name</h2>
-        <div style="color:var(--gold); font-weight:bold; font-size:20px; margin-bottom:20px;" id="td-level">Lv.1</div>
+    <div id="app">
+        <canvas id="bg-canvas"></canvas>
+        <canvas id="game-canvas"></canvas>
+        <canvas id="fx-canvas"></canvas>
+        <div id="fps-counter">FPS: 60</div>
         
-        <div class="list-row" style="text-align:left;">
-          <div style="color:#aaa; font-size:14px; margin-bottom:8px;">砲彈特性 (對應實戰機制)</div>
-          <div id="td-type" style="color:#fff; font-size:18px;">Type</div>
+        <!-- 頂部通用狀態列 -->
+        <div class="top-bar">
+            <div class="stats">
+                <div class="badge" id="player-rank">列兵</div>
+                <div class="currency">💎 <span id="diamond-count">500</span></div>
+            </div>
+            <div class="top-btns">
+                <button onclick="addDiamonds(5000)">+5000</button>
+                <button onclick="toggleAudio()">🔊</button>
+                <button onclick="showModal('sys-modal')">⚙️</button>
+            </div>
         </div>
-        <div class="list-row" style="text-align:left;">
-          <div style="color:var(--p-color); font-size:14px; margin-bottom:8px;">專屬技能</div>
-          <div id="td-skill" style="font-weight:bold; font-size:18px;">Skill</div>
+
+        <!-- 大廳介面 -->
+        <div id="menu-screen" class="screen">
+            <div class="hangar-area">
+                <div class="hangar-title">戰術機庫</div>
+                <canvas id="hangar-canvas" onclick="showModal('tower-modal')"></canvas>
+                <div class="tower-info-tag" id="hangar-tower-name">UR 毀滅星神 +1</div>
+            </div>
+            <div class="campaign-board">
+                <div class="route-btn" onclick="openStageSelect('vocab')">
+                    ⚔️ 單字征途
+                    <div class="route-progress" id="vocab-progress">進度：第 1 / 100 關</div>
+                </div>
+                <div class="route-btn" style="border-color:#b055ff;" onclick="openStageSelect('grammar')">
+                    ⚡ 文法試煉
+                    <div class="route-progress" id="grammar-progress">進度：第 1 / 100 關</div>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <div class="nav-btn" onclick="showModal('gacha-modal')">🎰 <span>轉蛋機</span></div>
+                <div class="nav-btn" onclick="showModal('monster-modal')">👾 <span id="monster-col-txt">圖鑑 0/42</span></div>
+                <div class="nav-btn" onclick="showModal('wrong-book-modal')">📖 <span>錯題本</span></div>
+            </div>
+        </div>
+
+        <!-- 戰鬥介面 -->
+        <div id="combat-screen" class="screen hidden">
+            <div class="battle-hud">
+                <div>
+                    <div style="font-size: 12px; color: #aaa;">防線耐久</div>
+                    <div class="hp-bar-bg"><div class="hp-bar-fill" id="base-hp-fill"></div></div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 12px; color: #aaa;" id="combat-stage-txt">單字 第 1 關</div>
+                    <div style="font-weight: bold; color: var(--ui-blue);" id="wave-txt">WAVE 1/5</div>
+                </div>
+            </div>
+            <div class="overheat-overlay" id="overheat-fx"></div>
+            <div style="flex:1"></div> <!-- 填空 -->
+            
+            <div class="quiz-panel">
+                <div class="timer-bar"><div class="timer-fill" id="quiz-timer"></div></div>
+                <div class="question-text" id="q-text">載入中...</div>
+                <div class="options-grid">
+                    <button class="option-btn" id="opt-0" onclick="answer(0)"></button>
+                    <button class="option-btn" id="opt-1" onclick="answer(1)"></button>
+                    <button class="option-btn" id="opt-2" onclick="answer(2)"></button>
+                    <button class="option-btn" id="opt-3" onclick="answer(3)"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 勝利結算 -->
+        <div id="victory-banner">
+            <div class="vic-title" id="vic-title-txt">VICTORY！</div>
+            <div class="vic-rewards" id="vic-reward-txt">+150 💎</div>
+            <div style="font-size:14px; margin-top:5px; color:#fff;" id="vic-stats">答對率 100% | 神速 x 3</div>
+            <div class="vic-btns">
+                <button class="btn-lobby" onclick="returnToMenu()">返回大廳</button>
+                <button class="btn-next" onclick="nextStage()">下一關 ➔</button>
+            </div>
+        </div>
+
+        <!-- 選關彈窗 -->
+        <div id="stage-modal" class="modal hidden">
+            <div class="modal-header">
+                <div class="modal-title" id="stage-modal-title">單字征途</div>
+                <button class="close-btn" onclick="hideModal('stage-modal')">X</button>
+            </div>
+            <div class="stage-grid" id="stage-grid-container"></div>
+        </div>
+
+        <!-- 裝備圖鑑彈窗 -->
+        <div id="tower-modal" class="modal hidden">
+            <div class="modal-header">
+                <div class="modal-title">砲塔裝備庫</div>
+                <button class="close-btn" onclick="hideModal('tower-modal')">X</button>
+            </div>
+            <div class="card-list" id="tower-list-container"></div>
+        </div>
+
+        <!-- 怪物圖鑑彈窗 -->
+        <div id="monster-modal" class="modal hidden">
+            <div class="modal-header">
+                <div class="modal-title">神話與傳說異聞錄</div>
+                <button class="close-btn" onclick="hideModal('monster-modal')">X</button>
+            </div>
+            <div class="card-list" id="monster-list-container"></div>
+        </div>
+
+        <!-- 轉蛋彈窗 -->
+        <div id="gacha-modal" class="modal hidden">
+            <div class="modal-header">
+                <div class="modal-title">星際召喚陣</div>
+                <button class="close-btn" onclick="hideModal('gacha-modal')">X</button>
+            </div>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <p style="color:#aaa; font-size:14px; margin-bottom:10px;">消耗鑽石召喚強大機甲。重複獲得轉為強化等級。</p>
+                <p>N: 50% | R: 35% | SR: 12% | UR: 3%</p>
+            </div>
+            <div style="display:flex; justify-content:center; gap:20px; margin-top:auto; margin-bottom: 50px;">
+                <button class="route-btn" style="padding:15px; font-size:16px; width: 140px; text-align:center;" onclick="performGacha(1)">單抽<br><span style="color:#ffd700">100 💎</span></button>
+                <button class="route-btn" style="padding:15px; font-size:16px; width: 140px; text-align:center; border-color:#ffd700;" onclick="performGacha(10)">10 連抽<br><span style="color:#ffd700">900 💎</span><br><span style="font-size:10px;color:#aaa">保底 SR</span></button>
+            </div>
         </div>
         
-        <button class="btn" style="width:100%; padding:20px; font-size:24px; margin-top:20px;" id="td-equip-btn">裝備出戰</button>
-      </div>
-    </div>
-  </div>
+        <!-- 系統管理 -->
+        <div id="sys-modal" class="modal hidden">
+            <div class="modal-header">
+                <div class="modal-title">指揮官終端</div>
+                <button class="close-btn" onclick="hideModal('sys-modal')">X</button>
+            </div>
+            <div class="card-list">
+                <button class="nav-btn" style="background:#800" onclick="resetSave()">⚠️ 刪除進度 (重置為第 1 關)</button>
+            </div>
+        </div>
 
-  <div id="gacha-anim" class="modal-overlay" style="z-index: 50; background:#000;">
-    <div style="width:100%; height:100%; display:flex; flex-direction:column; padding:20px;">
-      <button class="btn" style="position:absolute; top:env(safe-area-inset-top); right:20px; z-index:55;" onclick="Gacha.skip()" id="gacha-skip-btn">跳過</button>
-      <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; width:100%;" id="gacha-scene">
-        <div class="summon-circle" id="g-circle"><div class="summon-core" id="g-core"></div></div>
-        <div id="g-result-grid" class="grid-list gacha-grid" style="display:none; width:100%; max-width:500px; gap:15px; justify-items:center; overflow:visible;"></div>
-      </div>
-    </div>
-  </div>
+        <!-- 轉蛋動畫遮罩 -->
+        <div id="gacha-fx-layer" class="hidden">
+            <button id="gacha-skip" onclick="skipGacha()">跳過動畫 ➔</button>
+            <canvas id="gacha-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index: 200; pointer-events:none;"></canvas>
+            <div class="gacha-result-grid" id="gacha-result"></div>
+            <button id="gacha-ok-btn" class="hidden" style="z-index:202; margin-top:20px; padding:10px 30px; background:var(--ui-blue); color:black; font-weight:bold; border-radius:20px; border:none;" onclick="closeGachaFx()">確認</button>
+        </div>
 
-  <div id="modal-dex" class="modal-overlay">
-    <div class="modal">
-      <button class="btn modal-close" onclick="UI.closeModal('modal-dex')">✕</button>
-      <h2 class="text-glow-magenta">神話傳說圖鑑</h2>
-      <div style="text-align:center; margin:15px 0; font-size:18px; color:#aaa; flex-shrink:0;">收集進度: <span id="md-count" style="color:#fff; font-weight:bold;">0</span> / 42</div>
-      <div class="grid-list dex-grid" id="md-list"></div>
     </div>
-  </div>
-
-  <div id="modal-dex-preview" class="modal-overlay" style="z-index: 35;">
-    <div class="modal" style="height:auto; max-height:80dvh;">
-      <button class="btn modal-close" onclick="UI.closeModal('modal-dex-preview')">✕</button>
-      <div style="height:300px; display:flex; justify-content:center; align-items:center; border-bottom:2px solid #333; margin-bottom:15px; flex-shrink:0;">
-        <canvas id="dp-canvas-temp" width="300" height="300"></canvas>
-      </div>
-      <div style="text-align:center;">
-        <h2 id="dp-name" style="font-size:32px; color:var(--s-color); text-shadow:0 0 10px var(--s-color);">Name</h2>
-        <div style="font-size:18px; color:#aaa; margin-top:10px;" id="dp-type">Type</div>
-        <p style="text-align:left; line-height:1.6; margin-top:20px; font-size:16px; color:#ddd;" id="dp-lore">Lore details here.</p>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-mistakes" class="modal-overlay">
-    <div class="modal">
-      <button class="btn modal-close" onclick="UI.closeModal('modal-mistakes')">✕</button>
-      <h2 class="text-glow-cyan">考前錯題本</h2>
-      <div style="text-align:center; margin:15px 0; font-size:14px; color:#aaa; flex-shrink:0;">自動記錄答錯或超時題目</div>
-      <div class="grid-list" id="mm-list" style="display:block;"></div>
-    </div>
-  </div>
-
-  <div id="modal-save" class="modal-overlay" style="z-index: 45;">
-    <div class="modal" style="height:auto; max-height:80dvh;">
-      <button class="btn modal-close" onclick="UI.closeModal('modal-save')">✕</button>
-      <h2>⚙️ 存檔管理</h2>
-      <p style="color:#aaa; font-size:14px; text-align:center; margin:15px 0;">可以在不同裝置間複製貼上代碼轉移進度</p>
-      
-      <textarea id="save-data-box" style="width:100%; height:120px; background:#112; color:#0ff; border:1px solid #445; border-radius:8px; padding:10px; margin-bottom:15px; font-family:monospace; font-size:12px; resize:none;" placeholder="在此貼上存檔代碼..."></textarea>
-      
-      <div style="display:flex; flex-direction:column; gap:15px;">
-        <button class="btn" style="background:#055; color:#fff;" onclick="SaveSys.exportToBox()">匯出目前存檔至上方框</button>
-        <button class="btn" style="background:#550; color:#fff;" onclick="SaveSys.importFromBox()">從上方框匯入存檔</button>
-        <div style="border-top:1px solid #444; margin:10px 0;"></div>
-        <button class="btn" style="background:var(--err); color:#fff; border-color:var(--err);" onclick="SaveSys.resetGame()">⚠️ 重置遊戲 (回到第 1 關)</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-result" class="modal-overlay" style="z-index: 40; background:rgba(0,5,15,0.95);">
-    <div class="modal" style="background:transparent; box-shadow:none; justify-content:center;">
-      <div style="font-size: clamp(36px, 8vw, 50px); font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold); text-align: center; animation: slideDownBounce 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;" id="res-title">VICTORY！完全勝利！</div>
-      
-      <div style="background:rgba(255,255,255,0.05); border:2px solid #333; border-radius:15px; padding:30px; margin:30px 0; text-align:center; flex-shrink:0;">
-        <div id="res-stage" style="color:#aaa; font-size:20px; margin-bottom:15px;">單字征途 第 1 關</div>
-        <div style="font-size:36px; color:var(--gold); font-weight:900; margin-bottom:15px;" id="res-reward">獲得 +150 💎</div>
-        <div id="res-stats" style="color:#fff; font-size:22px;">答對率: 100%</div>
-        <div id="res-new-monster" style="color:var(--s-color); font-weight:bold; font-size:22px; margin-top:20px; animation:pulse 1s infinite alternate; display:none;">✨ 解鎖新傳說圖鑑！</div>
-      </div>
-      
-      <div style="display:flex; gap:15px; justify-content:center; flex-shrink:0;">
-        <button class="btn" style="flex:1; padding:20px; font-size:20px; border-color:#888; color:#888;" onclick="UI.showMenu()">返回大廳</button>
-        <button class="btn" style="flex:2; padding:20px; font-size:24px;" id="res-next-btn" onclick="Game.nextStage()">下一關</button>
-      </div>
-    </div>
-  </div>
-
-</div>
 
 <script>
-/* ==========================================================================
-   0. Safety & Globals
-   ========================================================================== */
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-/* ==========================================================================
-   1. Data Configurations (Questions, Turrets, Monsters)
-   ========================================================================== */
+/**
+ * 高品質 160 題庫 (無重複機制專用)
+ * 格式：路線|難度(1-4)|題幹|A|B|C|D|答案索引(0-3)|解析
+ */
 const Q_RAW = `
-vocab|1|A ___ is an animal kept in the house.|pet|car|cup|pen|0|pet=寵物
-vocab|1|I use a ___ to write.|book|pen|bag|cup|1|pen=筆
-vocab|1|The ___ shines in the day.|moon|star|sun|cloud|2|sun=太陽
-vocab|1|She reads a ___ every night.|book|shoe|tree|car|0|book=書
-vocab|1|We eat food on a ___.|wall|table|floor|door|1|table=桌子
-vocab|1|An ___ a day keeps the doctor away.|apple|orange|banana|grape|0|apple=蘋果
-vocab|1|Birds fly in the ___.|sea|sky|ground|water|1|sky=天空
-vocab|1|I wear ___ on my feet.|hats|gloves|shoes|shirts|2|shoes=鞋子
-vocab|1|A ___ has four wheels.|bike|boat|car|plane|2|car=汽車
-vocab|1|I drink ___ every morning.|milk|bread|rice|meat|0|milk=牛奶
-vocab|2|The manager has to ___ the meeting.|attend|attract|attach|attack|0|attend=參加
-vocab|2|Please ___ your seatbelt.|fasten|loose|break|cut|0|fasten=繫緊
-vocab|2|She made a ___ decision.|brief|bright|brave|broad|2|brave=勇敢的
-vocab|2|The weather is highly ___.|predict|predictable|prediction|predicts|1|predictable=可預測的
-vocab|2|He has a strong ___ in God.|belief|believe|believer|believing|0|belief=信仰
-vocab|2|The factory produces ___ chemicals.|toxic|tonic|topic|tunic|0|toxic=有毒的
-vocab|2|It is ___ to wear a helmet.|compulsory|compassion|complex|complete|0|compulsory=強制的
-vocab|2|She gave a ___ smile.|genuine|genius|general|gentle|0|genuine=真誠的
-vocab|2|The plan was entirely ___.|feasible|fearful|feeble|festive|0|feasible=可行的
-vocab|2|We need to ___ the problem.|tackle|tickle|tangle|toggle|0|tackle=處理
-vocab|3|His remarks were highly ___.|ambiguous|ambitious|ambidextrous|ambient|0|ambiguous=模稜兩可的
-vocab|3|The disease is ___ in this region.|endemic|epidemic|pandemic|academic|0|endemic=地方性的
-vocab|3|She showed great ___ in the face of danger.|fortitude|fortune|fortress|fortify|0|fortitude=堅韌
-vocab|3|The evidence is ___.|irrefutable|irregular|irrelevant|irrational|0|irrefutable=無可辯駁的
-vocab|3|His lifestyle is quite ___.|sedentary|sedative|sediment|seductive|0|sedentary=久坐的
-vocab|3|The changes are largely ___.|cosmetic|cosmic|costly|costume|0|cosmetic=表面的
-vocab|3|The company is on the ___ of bankruptcy.|verge|surge|urge|purge|0|verge=邊緣
-vocab|3|She is known for her ___ behavior.|erratic|erotic|errand|error|0|erratic=反常的
-vocab|3|The plot of the novel is highly ___.|intricate|intrinsic|introvert|intrude|0|intricate=錯綜複雜的
-vocab|3|His actions were driven by ___.|malice|malady|malaria|malfunction|0|malice=惡意
-grammar|1|He ___ a student.|is|am|are|be|0|主詞He配is
-grammar|1|I ___ to school every day.|go|goes|went|going|0|每天發生用現在簡單式
-grammar|1|They ___ playing basketball now.|is|am|are|be|2|現在進行式複數用are
-grammar|1|She ___ not like apples.|do|does|did|done|1|第三人稱單數助動詞does
-grammar|1|___ you like music?|Do|Does|Are|Is|0|一般動詞疑問句用Do
-grammar|1|Yesterday, I ___ a movie.|watch|watches|watched|watching|2|過去式加ed
-grammar|1|I have ___ apples.|two|second|twice|twin|0|數量用基數詞
-grammar|1|This is ___ book.|my|me|I|mine|0|所有格my
-grammar|1|He is taller ___ me.|then|than|that|this|1|比較級連詞than
-grammar|1|___ is the weather today?|How|What|Where|Who|0|問天氣用How
-grammar|2|If it ___, we will stay home.|rains|rain|rained|raining|0|條件句現在代未來
-grammar|2|I look forward to ___ you.|see|saw|seeing|seen|2|look forward to+Ving
-grammar|2|She ___ lived here for 5 years.|has|have|had|having|0|現在完成式has+Vpp
-grammar|2|The book ___ by him is great.|written|writing|wrote|write|0|被動分詞作後位修飾
-grammar|2|He is the boy ___ won the prize.|who|which|where|whom|0|關係代名詞主格who
-grammar|2|By the time I arrived, he ___ left.|has|have|had|having|2|過去完成式had+Vpp
-grammar|2|Would you mind ___ the door?|open|opened|opening|opens|2|mind+Ving
-grammar|2|Neither he nor I ___ wrong.|am|is|are|be|0|動詞隨最近主詞變化
-grammar|2|I suggest that he ___ early.|go|goes|went|going|0|suggest+that+S+(should)+V原型
-grammar|2|It is important that she ___ here.|be|is|am|are|0|important+that+S+(should)+V原型
-grammar|3|Hardly ___ arrived when it rained.|had I|I had|have I|I have|0|否定副詞置首，倒裝
-grammar|3|Not only ___ the game, but he broke the record.|did he win|he won|he did win|won he|0|Not only置首，倒裝
-grammar|3|___ tired, he went to bed early.|Feeling|Felt|Feel|Feels|0|分詞構句主動Ving
-grammar|3|Had I known, I ___ helped.|would have|would|will have|will|0|與過去事實相反假設
-grammar|3|He speaks as if he ___ a king.|were|was|is|be|0|as if假設語氣用were
-grammar|3|No sooner had he left ___ the bomb exploded.|than|when|then|that|0|no sooner...than
-grammar|3|___ from space, the earth looks blue.|Seen|Seeing|Saw|See|0|被動分詞構句Seen
-grammar|3|I prefer walking to ___.|cycling|cycle|cycled|cycles|0|prefer Ving to Ving
-grammar|3|It is no use ___ over spilt milk.|crying|cry|cried|cries|0|It is no use+Ving
-grammar|3|The more you read, the ___ you know.|more|much|most|many|0|The 比較級, the 比較級
+vocab|1|It is difficult to ______ the language barrier.|overcome|overlook|overtake|overdo|0|overcome 克服
+vocab|1|She is very ______ and studies 5 hours a day.|diligent|lazy|casual|random|0|diligent 勤勉的
+vocab|1|He tried to ______ his friend to join the club.|persuade|invade|evade|parade|0|persuade 說服
+vocab|1|The police were ______ of the man in the dark coat.|suspicious|delicious|precious|conscious|0|suspicious 懷疑的
+vocab|1|We need to ______ the old building to build a park.|demolish|construct|protect|decorate|0|demolish 拆毀
+vocab|1|The factory causes serious ______ to the river.|pollution|population|protection|production|0|pollution 汙染
+vocab|1|She made a great ______ to the science project.|contribution|distribution|attribution|retribution|0|contribution 貢獻
+vocab|1|The news caused a lot of ______ among the public.|confusion|conclusion|exclusion|inclusion|0|confusion 困惑
+vocab|1|He is highly ______ of his team's success.|confident|diffident|evident|incident|0|confident 有信心的
+vocab|1|We must ______ our natural resources for future generations.|conserve|consume|waste|destroy|0|conserve 保存
+vocab|1|The manager will ______ the meeting tomorrow.|attend|intend|pretend|extend|0|attend 參加
+vocab|1|The company offers a wide ______ of products.|variety|society|anxiety|piety|0|variety 多樣化
+vocab|1|She was ______ by his sudden appearance.|surprised|supposed|supported|surrounded|0|surprised 驚訝的
+vocab|1|The new policy will ______ everyone in the company.|affect|effect|infect|defect|0|affect 影響(動詞)
+vocab|1|The book provides a ______ account of the war.|detailed|failed|sailed|nailed|0|detailed 詳細的
+vocab|1|She is a very ______ person who always gives to charity.|generous|nervous|jealous|serious|0|generous 慷慨的
+vocab|1|The athlete showed great ______ during the marathon.|endurance|insurance|assurance|clearance|0|endurance 耐力
+vocab|1|We must ______ the problem immediately.|resolve|dissolve|involve|evolve|0|resolve 解決
+vocab|1|The movie was so ______ that I cried.|moving|boring|exciting|frightening|0|moving 令人感動的
+vocab|1|He gave a ______ reply to my question.|prompt|pump|plump|plum|0|prompt 迅速的
+vocab|2|The government plans to ______ taxes next year.|reduce|produce|introduce|induce|0|reduce 減少
+vocab|2|She received a ______ for her outstanding performance.|reward|forward|backward|awkward|0|reward 獎勵
+vocab|2|The scientist made an important ______ in the lab.|discovery|recovery|delivery|bravery|0|discovery 發現
+vocab|2|Is the food ______ for the party of 50 people?|adequate|accurate|absolute|abstract|0|adequate 足夠的
+vocab|2|The company will ______ workers for the overtime.|compensate|complicate|calculate|circulate|0|compensate 補償
+vocab|2|We must ______ the bugs in the software.|eliminate|illuminate|fascinate|dominate|0|eliminate 消除
+vocab|2|The arts ______ in Florence during the Renaissance.|flourished|vanished|punished|polished|0|flourish 繁榮
+vocab|2|Fear of failure is a major ______ to success.|obstacle|miracle|vehicle|particle|0|obstacle 障礙
+vocab|2|He was ______ to leave his comfortable home.|reluctant|redundant|abundant|ignorant|0|reluctant 不情願的
+vocab|2|The doctor prescribed some ______ for the cough.|medicine|machine|magazine|marine|0|medicine 藥物
+vocab|2|The bridge was ______ by the earthquake.|damaged|managed|packaged|massaged|0|damage 損害
+vocab|2|He has a very ______ attitude towards his work.|positive|negative|active|passive|0|positive 正面的
+vocab|2|The ______ between the two countries is tense.|relationship|scholarship|friendship|hardship|0|relationship 關係
+vocab|2|She is a highly ______ musician.|talented|wanted|planted|granted|0|talented 有天賦的
+vocab|2|The museum has a large ______ of old coins.|collection|connection|correction|perfection|0|collection 收藏
+vocab|2|She was ______ from the hospital after three days.|discharged|charged|recharged|overcharged|0|discharge 離開/出院
+vocab|2|The company aims to ______ its business overseas.|expand|spend|suspend|defend|0|expand 擴張
+vocab|2|He has a strong ______ to become a doctor.|ambition|tradition|condition|position|0|ambition 抱負
+vocab|2|She gave a ______ explanation for her absence.|logical|magical|musical|physical|0|logical 合邏輯的
+vocab|2|The boss made a ______ decision without thinking.|hasty|tasty|nasty|pasty|0|hasty 倉促的
+vocab|3|The politician's ______ remarks caused a public outcry.|controversial|commercial|beneficial|artificial|0|controversial 具爭議的
+vocab|3|The instructions were so ______ that nobody understood them.|ambiguous|obvious|lucid|clear|0|ambiguous 模稜兩可的
+vocab|3|Physical education is ______ in this school.|compulsory|voluntary|optional|temporary|0|compulsory 必修/強制的
+vocab|3|His health began to ______ rapidly after the incident.|deteriorate|ameliorate|accelerate|accumulate|0|deteriorate 惡化
+vocab|3|It's not ______ to finish this massive project in one day.|feasible|terrible|horrible|invisible|0|feasible 可行的
+vocab|3|The painting is a ______ Picasso, not a fake.|genuine|penguin|engine|imagine|0|genuine 真正的
+vocab|3|In a war, civilian casualties are often ______.|inevitable|preventable|profitable|comfortable|0|inevitable 不可避免的
+vocab|3|The elderly are particularly ______ to the virus.|vulnerable|invincible|flexible|credible|0|vulnerable 脆弱/易受傷的
+vocab|3|The company is seeking to ______ its operations.|diversify|simplify|clarify|verify|0|diversify 多樣化
+vocab|3|Her constant complaints were a source of ______.|irritation|invitation|imitation|limitation|0|irritation 惱怒
+vocab|3|The new law had a ______ impact on the economy.|profound|astound|surround|abound|0|profound 深遠的
+vocab|3|He is known for his ______ devotion to his family.|unwavering|wandering|wondering|whispering|0|unwavering 堅定不移的
+vocab|3|The project requires ______ planning and execution.|meticulous|ridiculous|fabulous|miraculous|0|meticulous 一絲不苟的
+vocab|3|She gave a ______ description of the accident.|vivid|rigid|timid|solid|0|vivid 生動的
+vocab|3|The evidence is completely ______ and unscientific.|anecdotal|fatal|vital|mental|0|anecdotal 軼事/不科學的
+vocab|3|The organization aims to ______ poverty worldwide.|eradicate|dedicate|medicate|indicate|0|eradicate 根除
+vocab|3|His behavior was ______ with his usual character.|inconsistent|insistent|persistent|resistant|0|inconsistent 不一致的
+vocab|3|The treaty brought a ______ end to the war.|temporary|contemporary|literary|military|0|temporary 暫時的
+vocab|3|She has a ______ ability to understand complex math.|remarkable|workable|breakable|readable|0|remarkable 非凡的
+vocab|3|He is highly ______ in several computer languages.|proficient|deficient|efficient|sufficient|0|proficient 精通的
+vocab|4|The philosopher's writing is notoriously ______.|esoteric|exoteric|generic|hysteric|0|esoteric 深奧難懂的
+vocab|4|The politician's ______ promises failed to deceive us.|specious|precious|spacious|gracious|0|specious 似是而非的
+vocab|4|The sudden inheritance led him to a highly ______ lifestyle.|decadent|accident|incident|evident|0|decadent 頹廢的
+vocab|4|The disease is ______ and goes unnoticed until too late.|insidious|invidious|tedious|fastidious|0|insidious 潛伏的
+vocab|4|She exhibited a ______ disregard for the rules.|callous|jealous|zealous|fabulous|0|callous 冷酷無情的
+vocab|4|The argument was completely ______ and illogical.|fallacious|audacious|tenacious|voracious|0|fallacious 謬誤的
+vocab|4|He approached the problem with ______ caution.|circumspect|suspect|prospect|retrospect|0|circumspect 慎重的
+vocab|4|The new theory is highly ______ without evidence.|conjectural|structural|cultural|agricultural|0|conjectural 推測的
+vocab|4|His ______ refusal to compromise ruined the deal.|intransigent|contingent|stringent|astringent|0|intransigent 不妥協的
+vocab|4|The author is known for his highly ______ prose style.|idiosyncratic|democratic|bureaucratic|aristocratic|0|idiosyncratic 獨特的
+vocab|4|The constant ______ between the two factions paralyzed the government.|bickering|flickering|snickering|glimmering|0|bickering 爭吵
+vocab|4|The painkiller helped to ______ the patient's suffering.|alleviate|aggravate|deviate|abbreviate|0|alleviate 減輕
+vocab|4|He made a ______ error by wearing a neon pink suit to a funeral.|conspicuous|suspicious|auspicious|delicious|0|conspicuous 顯眼的
+vocab|4|Smoking has a ______ effect on your lungs.|detrimental|instrumental|fundamental|monumental|0|detrimental 有害的
+vocab|4|Fame is often ______; here today, gone tomorrow.|ephemeral|eternal|internal|external|0|ephemeral 短暫的
+vocab|4|Floppy disks are now completely ______.|obsolete|absolute|resolute|dissolute|0|obsolete 過時的
+vocab|4|Smartphones have become ______ in modern society.|ubiquitous|iniquitous|calamitous|precipitous|0|ubiquitous 無所不在的
+vocab|4|The DNA evidence helped to ______ the wrongly accused man.|vindicate|indicate|syndicate|eradicate|0|vindicate 證明清白
+vocab|4|The team's performance was characterized by extreme ______.|lethargy|energy|allergy|synergy|0|lethargy 昏睡/無精打采
+vocab|4|The evidence was highly ______ and easily refuted.|spurious|furious|curious|injurious|0|spurious 虛假的
+grammar|1|My brother ______ tennis every weekend.|plays|play|played|playing|0|第三人稱單數動詞
+grammar|1|They ______ a new car last month.|bought|buy|buys|buying|0|過去式
+grammar|1|She has ______ in this city for ten years.|lived|live|lives|living|0|現在完成式
+grammar|1|I enjoy ______ to music in my free time.|listening|listen|to listen|listened|0|enjoy + Ving
+grammar|1|The book ______ is on the desk is mine.|which|who|whom|whose|0|關係代名詞
+grammar|1|If it ______, we will stay at home tomorrow.|rains|rain|will rain|rained|0|條件子句
+grammar|1|He asked me where I ______ from.|came|come|have come|coming|0|間接問句
+grammar|1|Neither you nor he ______ right.|is|are|am|be|0|Neither...nor 主動詞一致
+grammar|1|The girl ______ you saw yesterday is my sister.|whom|which|whose|what|0|關係代名詞受格
+grammar|1|I saw the dog ______ across the street.|run|ran|to run|runs|0|感官動詞 + 原形動詞
+grammar|1|It is easy ______ this machine.|to use|using|use|used|0|It is + adj + to V
+grammar|1|I am used to ______ up early.|getting|get|got|gotten|0|be used to + Ving
+grammar|1|My mother made me ______ my room.|clean|to clean|cleaning|cleaned|0|使役動詞 + 原形
+grammar|1|Not only he but also I ______ going to the party.|am|is|are|be|0|Not only...but also 主動詞
+grammar|1|Please stop ______. I'm trying to study.|talking|talk|to talk|talked|0|stop + Ving
+grammar|1|I wish I ______ a bird.|were|was|am|be|0|與現在事實相反假設語氣
+grammar|1|The house ______ we live is very old.|where|which|that|what|0|關係副詞
+grammar|1|There is a book ______ on the table.|lying|laying|lies|lays|0|分詞構句
+grammar|1|By next year, he ______ from college.|will have graduated|will graduate|graduates|graduated|0|未來完成式
+grammar|1|This is the best movie I have ______ seen.|ever|never|yet|already|0|完成式中的 ever
+grammar|2|I had my hair ______ yesterday.|cut|cutting|to cut|cuts|0|have + O + p.p.
+grammar|2|The man ______ next to the door is my uncle.|standing|stood|stands|to stand|0|現在分詞片語修飾名詞
+grammar|2|Had I known it, I ______ you.|would have told|would tell|will tell|had told|0|與過去相反假設倒裝
+grammar|2|The doctor insisted that she ______ rest.|take|takes|took|taking|0|insist + that + S + (should) V
+grammar|2|No sooner had he left ______ it started to rain.|than|when|then|that|0|No sooner...than
+grammar|2|______ being tired, he kept working.|Despite|Although|Though|Even|0|Despite + Ving
+grammar|2|The reason why he failed is ______ he was lazy.|that|because|why|which|0|The reason...is that
+grammar|2|Not until yesterday ______ the truth.|did I know|I knew|I had known|had I known|0|Not until... + 倒裝
+grammar|2|Only then ______ his mistake.|did he realize|he realized|he has realized|has he realized|0|Only + 副詞 + 倒裝
+grammar|2|I prefer reading to ______ TV.|watching|watch|watched|to watch|0|prefer Ving to Ving
+grammar|2|He talked as if he ______ everything.|knew|knows|has known|know|0|as if 假設語氣
+grammar|2|The car, ______ color is red, is expensive.|whose|which|that|what|0|關係代名詞所有格
+grammar|2|Hardly ______ arrived when the phone rang.|had I|I had|have I|I have|0|Hardly...when 倒裝
+grammar|2|Whatever ______, keep calm.|happens|happen|happened|will happen|0|Whatever + V
+grammar|2|If you ______ me, I would have helped you.|had asked|asked|ask|would ask|0|與過去相反假設語氣
+grammar|2|He is proud of ______ the first prize.|having won|win|won|to win|0|介系詞 + Ving/having p.p.
+grammar|2|Provided that it is fine, we ______ on a picnic.|will go|would go|went|go|0|Provided that = if
+grammar|2|He is the very person ______ I want to meet.|that|who|whom|which|0|the very + N + that
+grammar|2|The more you read, the ______ you will understand.|better|best|good|well|0|The + 比較級, the + 比較級
+grammar|2|It is time we ______ home.|went|go|going|gone|0|It is time + 過去式
+grammar|3|Were it not for water, we ______ live.|could not|cannot|will not|could not have|0|與現在相反假設倒裝
+grammar|3|So fast ______ that we couldn't catch him.|did he run|he ran|he runs|runs he|0|So + adv + 倒裝
+grammar|3|______ is often the case, he was late again.|As|Which|That|It|0|As 關代
+grammar|3|There is no denying ______ he is a genius.|that|which|what|if|0|There is no denying that
+grammar|3|______ from a distance, the island looks like a turtle.|Seen|Seeing|To see|See|0|過去分詞片語
+grammar|3|He hurried lest he ______ the train.|should miss|missed|misses|would miss|0|lest + (should) V
+grammar|3|She spoke softly for fear that she ______ wake the baby.|might|will|can|must|0|for fear that + might V
+grammar|3|I would sooner you ______ the truth.|told|tell|telling|to tell|0|would sooner + 過去式
+grammar|3|Rich ______ he is, he is not happy.|as|although|though|even if|0|Adj + as + S + V 讓步倒裝
+grammar|3|The question is ______ we can finish it on time.|whether|if|that|what|0|whether 名詞子句
+grammar|3|She is one of the girls who ______ singing.|like|likes|liked|liking|0|who 關代主詞單複數
+grammar|3|Never before ______ such a beautiful sight.|have I seen|I have seen|I saw|did I see|0|否定副詞句首倒裝
+grammar|3|Supposing it ______, what should we do?|rained|rains|will rain|rain|0|Supposing = if (與現在相反)
+grammar|3|It is vital that he ______ informed immediately.|be|is|was|were|0|vital that + (should) V
+grammar|3|I vividly remember ______ him in Paris last year.|meeting|to meet|meet|met|0|remember Ving
+grammar|3|My car needs ______. It's very dirty.|washing|to wash|wash|washed|0|need + Ving
+grammar|3|He is believed ______ a lot of money last year.|to have made|to make|making|made|0|is believed to have p.p.
+grammar|3|______ knowing what to do, she asked for advice.|Not|No|None|Never|0|Not + Ving
+grammar|3|I object to ______ treated like this.|being|be|been|have been|0|object to Ving
+grammar|3|When it comes to ______ math, he is an expert.|teaching|teach|taught|to teach|0|when it comes to Ving
+grammar|4|Had it not been for your advice, I ______ a big mistake.|would have made|would make|will make|had made|0|與過去相反假設倒裝
+grammar|4|Only when the bell rings ______ leave the classroom.|can you|you can|you could|could you|0|Only when + 倒裝
+grammar|4|Such ______ his anger that he couldn't speak a word.|was|were|is|are|0|Such + be + S + that (倒裝)
+grammar|4|______ as the task was, they managed to complete it.|Formidable|Formidably|To form|Form|0|Adj + as + S + be
+grammar|4|I would rather you ______ the secret to anyone yesterday.|had not told|did not tell|do not tell|have not told|0|would rather + 過去完成式
+grammar|4|If only I ______ harder when I was young!|had studied|studied|study|would study|0|If only + 過去完成式
+grammar|4|Seldom ______ such a profound impact on society.|has a book had|a book has had|did a book have|a book had|0|否定副詞放句首倒裝
+grammar|4|On no account ______ you to touch this button.|are|do|will|can|0|On no account + be動詞倒裝
+grammar|4|Were the project ______ fail, we would lose everything.|to|of|for|with|0|Were + S + to V
+grammar|4|No sooner had the plane taken off ______ the engine caught fire.|than|when|that|then|0|No sooner...than...
+grammar|4|Scarcely had I opened the door ______ the dog rushed out.|when|than|that|then|0|Scarcely...when...
+grammar|4|By the end of this century, scientists ______ a cure.|will have discovered|will discover|discover|discovered|0|未來完成式
+grammar|4|He spoke with such confidence as though he ______ the whole truth.|had known|knew|knows|has known|0|as though + 過去完成式
+grammar|4|It was not until the doctor arrived ______ the patient was saved.|that|when|which|why|0|It was not until...that...
+grammar|4|Only by practicing hard ______ improve your skills.|will you|you will|you can|can you|0|Only by... + 倒裝
+grammar|4|Whatever the cost ______, we must finish the project.|may be|is|was|will be|0|Whatever...may be
+grammar|4|He failed the exam, ______ was not surprising.|which|that|what|it|0|which 非限定關代
+grammar|4|The manager urged that everyone ______ more productive.|be|is|was|were|0|urge + that + (should) V
+grammar|4|______ an emergency arise, please break the glass.|Should|If|Were|Had|0|Should 倒裝表萬一
+grammar|4|I wish I ______ the answer to your question right now.|knew|know|had known|will know|0|wish + 過去式
+// === 擴充題庫貼上區 ===
 `;
-const QUESTIONS_DB = Q_RAW.trim().split('\n').filter(l => l && !l.startsWith('//')).map(line => {
-  const p = line.split('|');
-  return { route: p[0], diff: parseInt(p[1]), q: p[2], opts: [p[3], p[4], p[5], p[6]], ans: parseInt(p[7]), exp: p[8] };
-});
 
-const TURRETS_DB = [
-  { id:0, rare:"N", name:"基礎哨衛砲", clr:"#aaa", b:1, skill:"無特殊效果", type:"kinetic", desc:"發射實體動能彈" },
-  { id:1, rare:"N", name:"速射輕機槍", clr:"#8a8", b:2, skill:"攻速快", type:"kinetic", desc:"雙管連發" },
-  { id:2, rare:"N", name:"重型加農砲", clr:"#a88", b:1, skill:"單發傷害高", type:"explosive", desc:"大口徑爆破彈" },
-  { id:3, rare:"N", name:"散彈發射器", clr:"#88a", b:3, skill:"微幅散射", type:"scatter", desc:"扇形3發" },
-  { id:4, rare:"N", name:"雙聯裝火砲", clr:"#aa8", b:2, skill:"雙倍打擊", type:"kinetic", desc:"穩定輸出" },
-  { id:5, rare:"N", name:"防空突擊砲", clr:"#8aa", b:1, skill:"彈速極快", type:"kinetic", desc:"瞬達目標" },
-  { id:6, rare:"N", name:"工業鉚釘槍", clr:"#a8a", b:1, skill:"小幅擊退", type:"knockback", desc:"擊退45px" },
-  { id:7, rare:"N", name:"廢鐵投石機", clr:"#999", b:1, skill:"拋物線", type:"explosive", desc:"大範圍爆發" },
-  { id:8, rare:"N", name:"生鏽雷射器", clr:"#a55", b:1, skill:"全螢幕直線", type:"laser", desc:"細小紅色射線貫穿" },
-  { id:9, rare:"N", name:"基礎守護者", clr:"#5a5", b:1, skill:"基礎能量彈", type:"kinetic", desc:"綠色離子球" },
-  { id:10, rare:"R", name:"烈焰噴射器", clr:"#f50", b:1, skill:"每秒-8%最大HP持4秒", type:"burn", desc:"附加DoT傷害" },
-  { id:11, rare:"R", name:"劇毒酸液塔", clr:"#a0f", b:1, skill:"每秒-8%最大HP持4秒", type:"poison", desc:"紫色毒液球" },
-  { id:12, rare:"R", name:"寒霜冰凍砲", clr:"#0af", b:1, skill:"命中減速50%持3秒", type:"slow", desc:"冰藍冷卻射線" },
-  { id:13, rare:"R", name:"電磁脈衝槍", clr:"#ff0", b:1, skill:"定身1.5秒", type:"stun", desc:"黃色電弧麻痺" },
-  { id:14, rare:"R", name:"三連裝機砲", clr:"#aaa", b:3, skill:"三發散射", type:"scatter", desc:"密集火力" },
-  { id:15, rare:"R", name:"合金碎甲砲", clr:"#f88", b:1, skill:"高傷害穿透", type:"kinetic", desc:"鎢鋼穿甲彈" },
-  { id:16, rare:"R", name:"金幣收割機", clr:"#fd0", b:1, skill:"擊殺額外+10鑽", type:"gold", desc:"發射硬幣" },
-  { id:17, rare:"R", name:"音波震盪儀", clr:"#8ff", b:1, skill:"強力擊退", type:"knockback", desc:"範圍擊退" },
-  { id:18, rare:"R", name:"追蹤導彈巢", clr:"#8f8", b:4, skill:"自動追蹤", type:"homing", desc:"4連發追蹤" },
-  { id:19, rare:"R", name:"狂熱催化塔", clr:"#f05", b:1, skill:"額外傷害+50%", type:"kinetic", desc:"狂熱能量球" },
-  { id:20, rare:"SR", name:"雷暴特斯拉", clr:"#ff0", b:1, skill:"閃電彈跳3次", type:"chain", desc:"閃電鏈跳躍攻擊" },
-  { id:21, rare:"SR", name:"零度領域塔", clr:"#0ff", b:1, skill:"全場光環減速25%", type:"aura_slow", desc:"被動絕對零度" },
-  { id:22, rare:"SR", name:"空間黑洞儀", clr:"#80f", b:1, skill:"生成黑洞吸扯1.5秒", type:"blackhole", desc:"重力塌縮點" },
-  { id:23, rare:"SR", name:"核子裂變砲", clr:"#3f3", b:2, skill:"劇毒與大爆炸", type:"explosive", desc:"大範圍核廢料彈頭" },
-  { id:24, rare:"SR", name:"量子多重飛彈", clr:"#f80", b:6, skill:"六重飛彈全彈發射", type:"scatter_homing", desc:"無死角追蹤覆蓋" },
-  { id:25, rare:"SR", name:"幻影折射鏡", clr:"#f0f", b:1, skill:"雷射折射3次", type:"bounce_laser", desc:"粉色稜鏡光束彈射" },
-  { id:26, rare:"SR", name:"財神聚寶盆", clr:"#fd0", b:1, skill:"暴擊時+50鑽", type:"gold_crit", desc:"純金元寶射擊" },
-  { id:27, rare:"SR", name:"時間靜止器", clr:"#fff", b:1, skill:"全場時停1.5秒", type:"timestop", desc:"銀色時空波" },
-  { id:28, rare:"UR", name:"太陽神光束", clr:"#ffaa00", b:1, skill:"極粗貫穿全場光束", type:"super_laser", desc:"毀滅恆星射線" },
-  { id:29, rare:"UR", name:"終焉星爆巨砲", clr:"#ff0055", b:4, skill:"4追蹤+黑洞+爆破", type:"ultimate", desc:"最高維度打擊" }
+// --- 數據結構 ---
+const MONSTER_DATA = [
+    // 迅捷系 (Fast)
+    { id: 'M01', name: '尼斯湖水怪', type: 'fast', desc: '遠程吐出高壓水柱', hpBase: 12, spdBase: 35 },
+    { id: 'M02', name: '九尾妖狐', type: 'fast', desc: '具備短距離殘影衝刺', hpBase: 15, spdBase: 40 },
+    { id: 'M03', name: '天蛾人', type: 'fast', desc: '空中飛行單位', hpBase: 10, spdBase: 45 },
+    { id: 'M04', name: '報喪女妖', type: 'fast', desc: '尖嘯降低砲塔攻速', hpBase: 14, spdBase: 38 },
+    { id: 'M05', name: '飛頭蠻', type: 'fast', desc: '體積小極難命中', hpBase: 8, spdBase: 50 },
+    { id: 'M06', name: '卓柏卡布拉', type: 'fast', desc: '吸血恢復生命', hpBase: 18, spdBase: 35 },
+    { id: 'M07', name: '溫迪哥', type: 'fast', desc: '飢餓狂暴加速', hpBase: 20, spdBase: 32 },
+    { id: 'M08', name: '雪女', type: 'fast', desc: '冰凍光環減速砲塔', hpBase: 15, spdBase: 30 },
+    { id: 'M09', name: '卡邦克魯', type: 'fast', desc: '寶石折射雷射', hpBase: 25, spdBase: 28 },
+    { id: 'M10', name: '南瓜頭', type: 'fast', desc: '死亡時爆炸', hpBase: 12, spdBase: 36 },
+    { id: 'M11', name: '隱形人', type: 'fast', desc: '半透明難以鎖定', hpBase: 10, spdBase: 30 },
+    { id: 'M12', name: '喪屍犬', type: 'fast', desc: '成群結隊出現', hpBase: 8, spdBase: 42 },
+    { id: 'M13', name: '食屍鬼', type: 'fast', desc: '低血量狂化', hpBase: 15, spdBase: 38 },
+    { id: 'M14', name: '半魚人', type: 'fast', desc: '滑行避開攻擊', hpBase: 14, spdBase: 34 },
+    // 重裝系 (Heavy)
+    { id: 'M15', name: '牛頭人', type: 'heavy', desc: '重裝護盾與震地波', hpBase: 55, spdBase: 15 },
+    { id: 'M16', name: '獨眼巨人', type: 'heavy', desc: '投擲巨石暈眩砲塔', hpBase: 60, spdBase: 12 },
+    { id: 'M17', name: '雪男', type: 'heavy', desc: '厚實毛皮減免傷害', hpBase: 50, spdBase: 16 },
+    { id: 'M18', name: '冰霜巨獸', type: 'heavy', desc: '死亡冰封周圍', hpBase: 65, spdBase: 10 },
+    { id: 'M19', name: '熔岩魔', type: 'heavy', desc: '接觸造成燃燒', hpBase: 55, spdBase: 14 },
+    { id: 'M20', name: '石像鬼', type: 'heavy', desc: '石化狀態無敵', hpBase: 45, spdBase: 18 },
+    { id: 'M21', name: '弗蘭肯斯坦', type: 'heavy', desc: '雷電攻擊補血', hpBase: 70, spdBase: 11 },
+    { id: 'M22', name: '樹精', type: 'heavy', desc: '緩慢回血', hpBase: 80, spdBase: 9 },
+    { id: 'M23', name: '無頭騎士', type: 'heavy', desc: '死亡後靈魂衝鋒', hpBase: 40, spdBase: 20 },
+    { id: 'M24', name: '狼人', type: 'heavy', desc: '滿月狂化雙倍攻速', hpBase: 45, spdBase: 18 },
+    { id: 'M25', name: '木乃伊', type: 'heavy', desc: '繃帶纏繞牽制', hpBase: 50, spdBase: 14 },
+    { id: 'M26', name: '泥人', type: 'heavy', desc: '分裂成兩個小泥人', hpBase: 60, spdBase: 12 },
+    { id: 'M27', name: '河童', type: 'heavy', desc: '水域防禦翻倍', hpBase: 45, spdBase: 16 },
+    { id: 'M28', name: '吸血鬼', type: 'heavy', desc: '化身蝙蝠閃避', hpBase: 40, spdBase: 17 },
+    // 魔王系 (Boss)
+    { id: 'M29', name: '海怪克拉肯', type: 'boss', desc: '發射墨汁遮擋視線', hpBase: 160, spdBase: 9 },
+    { id: 'M30', name: '八岐大蛇', type: 'boss', desc: '八個頭顱獨立攻擊', hpBase: 200, spdBase: 8 },
+    { id: 'M31', name: '貝希摩斯', type: 'boss', desc: '絕對防禦力', hpBase: 250, spdBase: 6 },
+    { id: 'M32', name: '利維坦', type: 'boss', desc: '引發海嘯推平防線', hpBase: 180, spdBase: 10 },
+    { id: 'M33', name: '美杜莎', type: 'boss', desc: '視線石化所有塔', hpBase: 150, spdBase: 11 },
+    { id: 'M34', name: '飛龍', type: 'boss', desc: '高空龍息轟炸', hpBase: 170, spdBase: 12 },
+    { id: 'M35', name: '鳳凰', type: 'boss', desc: '死亡後浴火重生一次', hpBase: 140, spdBase: 13 },
+    { id: 'M36', name: '邪神克蘇魯', type: 'boss', desc: '精神污染隨機干擾', hpBase: 300, spdBase: 5 },
+    { id: 'M37', name: '阿努比斯', type: 'boss', desc: '召喚亡靈大軍', hpBase: 190, spdBase: 10 },
+    { id: 'M38', name: '羽蛇神', type: 'boss', desc: '颶風卷走子彈', hpBase: 160, spdBase: 12 },
+    { id: 'M39', name: '牛魔王', type: 'boss', desc: '野蠻衝撞破壞護盾', hpBase: 220, spdBase: 9 },
+    { id: 'M40', name: '死神', type: 'boss', desc: '鐮刀無視護甲秒殺', hpBase: 150, spdBase: 11 },
+    { id: 'M41', name: '巴風特', type: 'boss', desc: '黑魔法範圍詛咒', hpBase: 180, spdBase: 10 },
+    { id: 'M42', name: '提豐', type: 'boss', desc: '萬妖之王全屏毀滅', hpBase: 350, spdBase: 7 }
 ];
-const RARE_COLORS = { 'N': '#aaa', 'R': '#a0f', 'SR': '#fd0', 'UR': '#ff0055' };
 
-const MONSTER_NAMES = [
-  "天蛾人","卓柏卡布拉","河童","報喪女妖","地獄犬","鐮鼬","吸血鬼","狼人","溫迪哥","貓妖","飛頭蠻","鵺","隱形鬼","飛龍",
-  "雪男","石像鬼","牛頭人","獨眼巨人","貝希摩斯","哥布林王","巨魔","弗蘭肯斯坦","泥人","大腳怪","樹精","沙蟲","冰霜巨獸","熔岩魔",
-  "尼斯湖水怪","九尾妖狐","海怪克拉肯","八岐大蛇","美杜莎","利維坦","邪神克蘇魯","百眼巨人","刻耳柏洛斯","龍王","鳳凰","饕餮","窮奇","混沌"
-];
-
-function getVType(name) {
-  if(["尼斯湖水怪"].includes(name)) return 'lochness';
-  if(["九尾妖狐"].includes(name)) return 'fox';
-  if(["海怪克拉肯", "邪神克蘇魯"].includes(name)) return 'tentacle';
-  if(["八岐大蛇", "龍王", "利維坦"].includes(name)) return 'multihead';
-  if(["美杜莎"].includes(name)) return 'medusa';
-  if(["天蛾人", "鳳凰", "飛龍", "石像鬼", "吸血鬼", "報喪女妖"].includes(name)) return 'winged';
-  if(["牛頭人", "獨眼巨人", "雪男", "貝希摩斯", "巨魔", "冰霜巨獸", "弗蘭肯斯坦", "泥人"].includes(name)) return 'brute';
-  return 'generic';
-}
-
-const MONSTERS_DB = MONSTER_NAMES.map((name, i) => {
-  let type = i < 14 ? 'swift' : (i < 28 ? 'heavy' : 'boss');
-  let spd = type==='swift'? 30 : (type==='heavy'? 14 : 9);
-  let hp = type==='swift'? 15 : (type==='heavy'? 55 : 160);
-  let size = type==='swift'? 20 : (type==='heavy'? 35 : 55);
-  let clr = type==='swift'? '#f44' : (type==='heavy'? '#889' : '#b0f');
-  let vType = getVType(name);
-  return { id: i, name, type, spd, hp, size, clr, vType };
-});
-
-/* ==========================================================================
-   2. Save System (Independent Management)
-   ========================================================================== */
-const DEFAULT_STATE = { coins: 0, maxStageVocab: 1, maxStageGrammar: 1, turrets: [0], turretLvls: { 0: 1 }, equippedTurret: 0, dex: [], mistakes: [], lastDaily: 0 };
-let State = JSON.parse(JSON.stringify(DEFAULT_STATE));
-
-const SaveSys = {
-  load() {
-    try {
-      let s = localStorage.getItem('ED_SAVE_V2');
-      if (s) { let d = JSON.parse(s); Object.keys(DEFAULT_STATE).forEach(k => { if(d[k] !== undefined) State[k] = d[k]; }); }
-    } catch(e) {}
-  },
-  save() { localStorage.setItem('ED_SAVE_V2', JSON.stringify(State)); },
-  exportToBox() { document.getElementById('save-data-box').value = btoa(JSON.stringify(State)); },
-  importFromBox() {
-    try {
-      let str = document.getElementById('save-data-box').value;
-      if(!str) return alert("請輸入代碼");
-      let parsed = JSON.parse(atob(str));
-      if(parsed && parsed.turrets) { State = parsed; this.save(); UI.updateBadges(); UI.closeModal('modal-save'); alert("匯入成功！"); }
-    } catch(e){ alert("存檔代碼無效！"); }
-  },
-  resetGame() {
-    if(confirm("確定要清除所有進度，從第 1 關重新開始嗎？此操作無法還原！")) {
-      State = JSON.parse(JSON.stringify(DEFAULT_STATE)); this.save();
-      UI.updateBadges(); UI.closeModal('modal-save'); alert("已重置為全新遊戲。");
-    }
-  }
-};
-
-/* ==========================================================================
-   3. Audio & Vibration
-   ========================================================================== */
-const AudioSys = {
-  ctx: null,
-  init() { if(!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} } if(this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(()=>{}); },
-  play(freq, type, dur, vol=0.1) {
-    if(!this.ctx) return;
-    try {
-      let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
-      osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-      osc.connect(gain); gain.connect(this.ctx.destination);
-      gain.gain.setValueAtTime(vol, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
-      osc.start(); osc.stop(this.ctx.currentTime + dur);
-    } catch(e){}
-  },
-  shoot() { this.play(150, 'square', 0.15, 0.05); }, laser() { this.play(800, 'sawtooth', 0.3, 0.05); }, explosion() { this.play(60, 'sawtooth', 0.4, 0.1); },
-  hit() { this.play(80, 'square', 0.1, 0.05); }, correct() { this.play(800, 'sine', 0.2, 0.1); setTimeout(()=>this.play(1200, 'sine', 0.4, 0.1), 100); },
-  wrong() { this.play(120, 'sawtooth', 0.4, 0.2); }, victory() { [523, 659, 783, 1046].forEach((f,i)=>setTimeout(()=>this.play(f,'square',0.3,0.1), i*150)); }
-};
-const Vibrate = (pattern) => { try { if(navigator.vibrate) navigator.vibrate(pattern); } catch(e){} };
-
-/* ==========================================================================
-   4. High-Performance 2.5D Rendering Engine (No shadowBlur, Full Responsive)
-   ========================================================================== */
-const C = { bg: document.getElementById('bg-canvas'), gm: document.getElementById('game-canvas'), ui: document.getElementById('ui-canvas') };
-const CTX = { bg: C.bg.getContext('2d', {alpha: false}), gm: C.gm.getContext('2d'), ui: C.ui.getContext('2d') };
-let GW = 0, GH = 0; let loopId = null;
-
-const resize = () => {
-  GW = window.innerWidth; GH = window.innerHeight; const dpr = window.devicePixelRatio || 1;
-  [C.bg, C.gm, C.ui].forEach(c => { c.width = GW * dpr; c.height = GH * dpr; });
-  [CTX.bg, CTX.gm, CTX.ui].forEach(ctx => { ctx.scale(dpr, dpr); });
-};
-window.addEventListener('resize', resize); resize();
-
-function drawGlow(ctx, x, y, r, color, alpha=1) {
-  ctx.globalAlpha = alpha; ctx.fillStyle = color;
-  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
-  ctx.globalAlpha = alpha * 0.4; ctx.beginPath(); ctx.arc(x, y, r*1.5, 0, Math.PI*2); ctx.fill();
-  ctx.globalAlpha = 1;
-}
-
-function drawMechaBase(ctx, x, y, hpRatio=1) {
-  ctx.save(); ctx.translate(x, y);
-  ctx.fillStyle = '#0f0f1a'; ctx.beginPath(); ctx.moveTo(-55, 25); ctx.lineTo(55, 25); ctx.lineTo(40, 0); ctx.lineTo(-40, 0); ctx.fill();
-  ctx.fillStyle = '#1a1a2a'; ctx.beginPath(); ctx.moveTo(-40, 0); ctx.lineTo(40, 0); ctx.lineTo(30, -12); ctx.lineTo(-30, -12); ctx.fill();
-  ctx.fillStyle = '#2a2a3a'; ctx.beginPath(); ctx.moveTo(-30, -12); ctx.lineTo(30, -12); ctx.lineTo(25, -20); ctx.lineTo(-25, -20); ctx.fill();
-  ctx.fillStyle = '#445'; ctx.fillRect(-35, 0, 10, 20); ctx.fillRect(25, 0, 10, 20);
-  ctx.fillStyle = '#223'; ctx.fillRect(-33, 6, 6, 14); ctx.fillRect(27, 6, 6, 14);
-  drawGlow(ctx, 0, -5, 10, hpRatio > 0.3 ? '#0ff' : '#f00', 0.8 + Math.sin(Date.now()*0.005)*0.2);
-  if(hpRatio > 0) {
-    ctx.strokeStyle = `rgba(0, 255, 255, ${Math.max(0.1, hpRatio*0.8)})`; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0, -15, 75, -Math.PI*0.6, Math.PI*0.6); ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function drawTurretGun(ctx, tid, x, y, angle, recoil, scale=1) {
-  const def = TURRETS_DB[tid];
-  ctx.save(); ctx.translate(x, y); ctx.rotate(angle); ctx.scale(scale, scale);
-  ctx.fillStyle = '#223'; ctx.fillRect(-22, -22, 44, 44);
-  ctx.fillStyle = '#334'; ctx.fillRect(-15, -15, 30, 30);
-  ctx.strokeStyle = def.clr; ctx.lineWidth = 3; ctx.strokeRect(-15, -15, 30, 30);
-  
-  for(let i=0; i<def.b; i++) {
-    let by = (i - (def.b-1)/2) * 12;
-    ctx.fillStyle = '#445'; ctx.fillRect(15 - recoil, by - 5, 40, 10);
-    ctx.fillStyle = '#112'; ctx.fillRect(45 - recoil, by - 6, 10, 12);
-    ctx.fillStyle = def.clr; ctx.fillRect(20 - recoil, by - 1, 20, 2);
-    if(recoil > 5) { ctx.fillStyle = def.clr; ctx.fillRect(60 - recoil, by - 2, 20, 4); ctx.fillRect(70 - recoil, by - 12, 4, 24); }
-  }
-  if(def.rare === 'UR') {
-    ctx.rotate(Date.now()*0.002); ctx.strokeStyle = def.clr; ctx.beginPath(); ctx.arc(0,0, 40, 0, Math.PI*2);
-    ctx.setLineDash([20, 10]); ctx.stroke(); ctx.setLineDash([]);
-  }
-  ctx.restore();
-}
-
-/* 2.5D Mythology Monster Art */
-function drawMonster(ctx, def, x, y, anim, status={}) {
-  ctx.save(); ctx.translate(x, y);
-  
-  // Status FX Underneath
-  if(status.auraSlow) drawGlow(ctx, 0, def.size/2, def.size*1.5, '#0ff', 0.2);
-  
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.beginPath(); ctx.ellipse(0, def.size*0.8, def.size, def.size/3, 0, 0, Math.PI*2); ctx.fill();
-  
-  let bob = Math.sin(anim * 10) * (def.vType==='winged'?8:4);
-  ctx.translate(0, bob);
-  ctx.fillStyle = def.clr;
-  
-  // Specific Visual Archetypes
-  if(def.vType === 'lochness') {
-    ctx.beginPath(); ctx.ellipse(0, 10, def.size, def.size/2, 0, 0, Math.PI*2); ctx.fill(); // body
-    ctx.beginPath(); ctx.moveTo(0, 10); ctx.quadraticCurveTo(-def.size, -def.size, -10, -def.size*1.5); ctx.lineTo(10, -def.size*1.5); ctx.quadraticCurveTo(0, -def.size/2, 20, 10); ctx.fill(); // neck
-    ctx.beginPath(); ctx.arc(0, -def.size*1.5, 12, 0, Math.PI*2); ctx.fill(); // head
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-5, -def.size*1.5-2, 3, 0, Math.PI*2); ctx.fill(); // eye
-  }
-  else if(def.vType === 'fox') {
-    for(let i=0; i<9; i++) {
-      ctx.save(); ctx.rotate(Math.sin(anim*4 + i)*0.15 + (i-4)*0.25);
-      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-def.size*1.5, -def.size); ctx.lineTo(def.size*0.5, -def.size); ctx.fill();
-      ctx.restore();
-    }
-    ctx.beginPath(); ctx.ellipse(0, 0, def.size*0.8, def.size*0.5, 0, 0, Math.PI*2); ctx.fill(); // body
-    ctx.beginPath(); ctx.moveTo(-def.size*0.5, -10); ctx.lineTo(-def.size*0.8, -def.size); ctx.lineTo(0, -10); ctx.fill(); // ears
-    ctx.beginPath(); ctx.moveTo(def.size*0.5, -10); ctx.lineTo(def.size*0.8, -def.size); ctx.lineTo(0, -10); ctx.fill();
-  }
-  else if(def.vType === 'tentacle') {
-    for(let i=0; i<6; i++) {
-      ctx.save();
-      let wave = Math.sin(anim*5 + i)*15;
-      ctx.beginPath(); ctx.moveTo((i-2.5)*8, 0); ctx.quadraticCurveTo((i-2.5)*15 + wave, def.size, (i-2.5)*10, def.size*1.5);
-      ctx.strokeStyle = def.clr; ctx.lineWidth=6; ctx.stroke();
-      ctx.restore();
-    }
-    ctx.beginPath(); ctx.arc(0, -def.size/2, def.size, 0, Math.PI*2); ctx.fill();
-    drawGlow(ctx, 0, -def.size/2, def.size/2, '#f00', 0.8); // Evil eye
-  }
-  else if(def.vType === 'multihead') {
-    ctx.beginPath(); ctx.ellipse(0, 10, def.size, def.size/2, 0, 0, Math.PI*2); ctx.fill();
-    for(let i=0; i<5; i++) {
-      ctx.save(); ctx.rotate(Math.sin(anim*3 + i)*0.2 + (i-2)*0.3);
-      ctx.fillRect(-5, -def.size*1.5, 10, def.size*1.5);
-      ctx.beginPath(); ctx.arc(0, -def.size*1.5, 12, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle='#ff0'; ctx.fillRect(-4, -def.size*1.5-2, 3, 3);
-      ctx.restore();
-    }
-  }
-  else if(def.vType === 'medusa') {
-    ctx.beginPath(); ctx.moveTo(-15, def.size); ctx.lineTo(15, def.size); ctx.lineTo(0, -def.size); ctx.fill();
-    ctx.beginPath(); ctx.arc(0, -def.size, 15, 0, Math.PI*2); ctx.fill();
-    for(let i=0; i<6; i++) {
-      ctx.strokeStyle='#0f0'; ctx.lineWidth=3;
-      ctx.beginPath(); ctx.moveTo(0, -def.size-10); ctx.quadraticCurveTo(Math.sin(anim*8+i)*20, -def.size-30, (i-2.5)*10, -def.size-20); ctx.stroke();
-    }
-    drawGlow(ctx, -5, -def.size, 20, 'rgba(0,255,0,0.4)'); // petrify gaze
-  }
-  else if(def.vType === 'winged') {
-    let wingRot = Math.sin(anim*15) * Math.PI/4;
-    ctx.save(); ctx.rotate(wingRot); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-def.size*2, -def.size); ctx.lineTo(-def.size, def.size); ctx.fill(); ctx.restore();
-    ctx.save(); ctx.scale(-1, 1); ctx.rotate(wingRot); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-def.size*2, -def.size); ctx.lineTo(-def.size, def.size); ctx.fill(); ctx.restore();
-    ctx.beginPath(); ctx.ellipse(0, 0, def.size*0.6, def.size, 0, 0, Math.PI*2); ctx.fill();
-  }
-  else if(def.vType === 'brute') {
-    ctx.fillRect(-def.size, -def.size, def.size*2, def.size*1.5); // broad shoulders
-    ctx.fillStyle = '#556'; ctx.fillRect(-def.size-10, -def.size-5, def.size*2+20, 15); // shoulder pads
-    ctx.strokeStyle = 'rgba(0,255,255,0.5)'; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(0,0, def.size*1.2, Math.PI*0.5, Math.PI*1.5); ctx.stroke(); // shield arc
-    ctx.fillStyle = '#f00'; ctx.beginPath(); ctx.arc(0, -def.size*0.5, 6, 0, Math.PI*2); ctx.fill();
-  }
-  else {
-    // Generic
-    ctx.beginPath(); ctx.arc(0, -def.size/3, def.size*0.8, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-5, -def.size/3, 5, 0, Math.PI*2); ctx.fill();
-  }
-  
-  // Status Overlays
-  if(status.burnTimer > 0) drawGlow(ctx, 0, 0, def.size, '#f50', 0.5);
-  if(status.poisonTimer > 0) drawGlow(ctx, 0, 0, def.size, '#a0f', 0.5);
-  if(status.stunTimer > 0 || status.freezeTimer > 0) {
-    ctx.strokeStyle = status.freezeTimer>0 ? '#0ff' : '#ff0'; ctx.lineWidth=3; ctx.setLineDash([5,5]);
-    ctx.beginPath(); ctx.arc(0, 0, def.size*1.2, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
-  }
-  if(status.enrage > 0) drawGlow(ctx, 0, 0, def.size*1.5, '#f00', 0.4);
-  
-  ctx.restore();
-}
-
-/* ==========================================================================
-   5. Game Engine (12s rules, Real Skills, Balancing)
-   ========================================================================== */
-class Particle {
-  constructor(x, y, vx, vy, clr, life) { Object.assign(this,{x,y,vx,vy,clr,life,maxLife:life}); }
-  update(dt) { this.x+=this.vx*dt; this.y+=this.vy*dt; this.life-=dt; }
-  draw(ctx) { drawGlow(ctx, this.x, this.y, 4, this.clr, Math.max(0, this.life/this.maxLife)); }
-}
-
-let Env = {
-  particles: [], projs: [], enemies: [], vfx: [], blackholes: [],
-  spawnExplosion(x, y, clr, count=15) {
+// 生成 30 個塔資料
+const TOWER_DATA = [];
+const skillTypes = ['none', 'slow', 'burn', 'knockback', 'chain', 'scatter', 'laser', 'stun', 'blackhole', 'gold_crit', 'super_laser', 'ultimate'];
+let t_id = 1;
+['N', 'R', 'SR', 'UR'].forEach(rarity => {
+    let count = rarity === 'N' ? 5 : rarity === 'R' ? 10 : rarity === 'SR' ? 10 : 5;
     for(let i=0; i<count; i++) {
-      if(this.particles.length > 150) this.particles.shift();
-      let a = Math.random()*Math.PI*2, v = Math.random()*150+50;
-      this.particles.push(new Particle(x, y, Math.cos(a)*v, Math.sin(a)*v, clr, 0.5));
+        let name = `${rarity}-型號 ${t_id}`;
+        let skill = skillTypes[t_id % skillTypes.length];
+        TOWER_DATA.push({ id: `P${t_id<10?'0'+t_id:t_id}`, name, rarity, skill, dmg: 10 + t_id*2, fireRate: 1 - (t_id%5)*0.1 });
+        t_id++;
     }
-  },
-  clear() { this.particles=[]; this.projs=[]; this.enemies=[]; this.vfx=[]; this.blackholes=[]; }
-};
-
-let Combat = {
-  active: false, route: '', level: 1,
-  hp: 100, maxHp: 100, combo: 0, feverTimer: 0, overheatTimer: 0,
-  waveTot: 0, waveSpawned: 0, waveKilled: 0, spawnTimer: 0,
-  qTimer: 8, qMax: 8, qActive: null, isAnswering: false,
-  recoil: 0, stats: { ansTot:0, ansCor:0 }, timestopTimer: 0,
-  
-  start(route, level) {
-    AudioSys.init();
-    this.active = true; this.route = route; this.level = level;
-    this.hp = 100; this.combo = 0; this.feverTimer = 0; this.overheatTimer = 0; this.timestopTimer = 0;
-    this.waveTot = 8 + Math.floor(level/2); this.waveSpawned = 0; this.waveKilled = 0; this.spawnTimer = 2;
-    this.stats = { ansTot:0, ansCor:0 }; this.isAnswering = false;
-    Env.clear();
-    
-    document.getElementById('combat-stage-info').textContent = `${route==='vocab'?'單字':'文法'} 第 ${level} 關`;
-    UI.showCombat(); this.nextQ();
-  },
-  
-  nextQ() {
-    this.isAnswering = false;
-    let diff = this.level <= 40 ? 1 : (this.level <= 75 ? 2 : 3);
-    let pool = QUESTIONS_DB.filter(q => q.route === this.route && q.diff === diff);
-    if(pool.length===0) pool = QUESTIONS_DB;
-    let q = pool[Math.floor(Math.random() * pool.length)];
-    let arr = [0,1,2,3]; for(let i=3; i>0; i--) { let j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
-    
-    this.qActive = { ...q, shuffledIdx: arr }; this.qTimer = 8;
-    document.getElementById('qa-q').textContent = q.q;
-    arr.forEach((origIdx, i) => { let btn = document.getElementById(`qa-${i}`); btn.textContent = q.opts[origIdx]; btn.className = 'opt-btn'; });
-  },
-  
-  answer(btnIdx) {
-    if(!this.active || this.isAnswering || this.overheatTimer>0) return;
-    this.isAnswering = true; AudioSys.init();
-    
-    let q = this.qActive; let origIdx = btnIdx >= 0 ? q.shuffledIdx[btnIdx] : -1;
-    let isCor = origIdx === q.ans; let tTaken = 8 - this.qTimer;
-    this.stats.ansTot++;
-    
-    if(isCor) {
-      this.stats.ansCor++;
-      if(btnIdx>=0) document.getElementById(`qa-${btnIdx}`).classList.add('correct');
-      AudioSys.correct();
-      let crit = tTaken <= 3.5; Vibrate(crit ? [40, 30, 60] : [30]);
-      
-      this.combo++; if(this.combo >= 3 && crit) this.feverTimer = 3;
-      this.fireTurret(crit);
-      setTimeout(() => { if(this.active) this.nextQ(); }, 300);
-    } else {
-      if(btnIdx>=0) document.getElementById(`qa-${btnIdx}`).classList.add('wrong');
-      let corBtnIdx = q.shuffledIdx.indexOf(q.ans);
-      if(corBtnIdx>=0) document.getElementById(`qa-${corBtnIdx}`).classList.add('correct');
-      
-      AudioSys.wrong(); Vibrate([150]);
-      this.combo = 0; this.overheatTimer = 0.7; // 0.7s penalty
-      document.getElementById('overheat-overlay').style.display = 'block'; setTimeout(()=> document.getElementById('overheat-overlay').style.display = 'none', 300);
-      
-      Env.enemies.forEach(e => e.status.enrage = 1); // 1s +25% spd enrage
-      if(!State.mistakes.find(m => m.q === q.q)) { State.mistakes.push({ q: q.q, ans: q.opts[q.ans], exp: q.exp }); SaveSys.save(); }
-      setTimeout(() => { if(this.active) this.nextQ(); }, 1000);
-    }
-  },
-  
-  fireTurret(crit) {
-    let tDef = TURRETS_DB[State.equippedTurret]; let tLvl = State.turretLvls[State.equippedTurret];
-    let dmg = (30 + tLvl*15) * (crit?2:1) * (this.feverTimer>0?1.5:1);
-    this.recoil = 20; AudioSys.shoot();
-    
-    // Intercept enemy bullets first
-    let ep = Env.projs.find(p => p.isEnemy);
-    if(ep) { ep.active = false; Env.spawnExplosion(ep.x, ep.y, '#0ff'); return; }
-    if(Env.enemies.length === 0) return;
-    
-    let base = {x: 100, y: GH/2 - 50}; // Virtual gun pos
-    let t = tDef.type; let s = tDef.skill;
-    
-    if(t === 'laser' || t === 'super_laser' || t === 'bounce_laser') {
-      AudioSys.laser();
-      Env.vfx.push({type:'laser', y: Env.enemies[0].y, clr: tDef.clr, life: 0.3, thick: t==='super_laser'?40:10});
-      if(t === 'bounce_laser') { // Hit 3
-         for(let i=0; i<Math.min(3, Env.enemies.length); i++) Env.enemies[i].curHp -= dmg;
-      } else { // Pierce all
-         Env.enemies.forEach(e => { if(Math.abs(e.y - Env.enemies[0].y) < 60) e.curHp -= dmg; });
-      }
-    } else if(t === 'chain') {
-      let targets = Env.enemies.slice(0, 3);
-      Env.vfx.push({type:'chain', pts: [{x:base.x,y:base.y}, ...targets.map(e=>({x:e.x,y:e.y}))], clr: tDef.clr, life: 0.3});
-      targets.forEach(e => e.curHp -= dmg);
-    } else {
-      let count = (t==='scatter' || t==='scatter_homing') ? (tDef.id===24 ? 6 : 3) : (tDef.id===18 ? 4 : 1);
-      for(let i=0; i<count; i++) {
-        let tgt = Env.enemies[Math.min(i, Env.enemies.length-1)];
-        Env.projs.push({ x: base.x, y: base.y+(i-count/2)*20, tgt, dmg, clr: tDef.clr, type: t, skill: s, life: 3, isEnemy: false });
-      }
-    }
-    
-    // Instant cast skills
-    if(s.includes("時停")) this.timestopTimer = 1.5;
-  },
-  
-  update(dt) {
-    if(!this.active) return;
-    
-    if(this.recoil > 0) this.recoil -= dt*80; if(this.recoil<0) this.recoil=0;
-    if(this.feverTimer > 0) this.feverTimer -= dt;
-    if(this.timestopTimer > 0) this.timestopTimer -= dt;
-    document.getElementById('fever-text').style.display = this.feverTimer>0 ? 'block' : 'none';
-    
-    if(this.overheatTimer > 0) this.overheatTimer -= dt;
-    else if(!this.isAnswering) { this.qTimer -= dt; if(this.qTimer <= 0) this.answer(-1); }
-    
-    // Spawning logic (scale for screen width logic: standard spawn at GW+50)
-    this.spawnTimer -= dt;
-    if(this.waveSpawned < this.waveTot && this.spawnTimer <= 0) {
-      this.spawnTimer = 2; this.waveSpawned++;
-      // Level > 10 mix heavy, level > 20 mix bosses
-      let pool = this.level > 20 ? 42 : (this.level > 10 ? 28 : 14);
-      // Final boss of wave is boss
-      if(this.waveSpawned === this.waveTot && this.level % 5 === 0) pool = 42; 
-      let mIdx = Math.floor(Math.random() * pool);
-      if(!State.dex.includes(mIdx)) { State.dex.push(mIdx); SaveSys.save(); UI.updateBadges(); }
-      
-      let def = MONSTERS_DB[mIdx];
-      let hMult = 1 + this.level*0.08;
-      // Proportional speed to make travel time consistent across device widths. Virtual width 800px.
-      let travelScale = GW / 800; 
-      Env.enemies.push({...def, x: GW+50, y: (GH*0.2) + Math.random()*(GH*0.3), anim: 0, curHp: def.hp*hMult, maxHp: def.hp*hMult, spd: def.spd * travelScale, status: {}});
-    }
-    
-    // Aura check
-    let auraSlow = TURRETS_DB[State.equippedTurret].skill.includes("光環減速");
-    
-    // Enemies update
-    for(let i=Env.enemies.length-1; i>=0; i--) {
-      let e = Env.enemies[i];
-      if(this.timestopTimer <= 0) {
-        e.anim += dt;
-        let finalSpd = e.spd;
-        if(e.status.enrage > 0) { e.status.enrage -= dt; finalSpd *= 1.25; }
-        if(e.status.freezeTimer > 0) { e.status.freezeTimer -= dt; finalSpd *= 0.5; }
-        if(auraSlow) finalSpd *= 0.75;
-        
-        e.status.auraSlow = auraSlow;
-        e.x -= finalSpd * dt;
-        
-        // Blackhole pull
-        Env.blackholes.forEach(bh => { if(Math.hypot(e.x-bh.x, e.y-bh.y) < 120) e.x += 100*dt; });
-        
-        // Boss fire
-        if(e.type === 'boss' && e.x < GW-100 && Math.random()<0.005 && Env.projs.filter(p=>p.isEnemy).length < 2) {
-          Env.projs.push({ x: e.x, y: e.y, vx: -250, vy: (GH/2-e.y)*0.5, clr: '#f0f', life: 5, isEnemy: true, dmg: 15 });
-        }
-      }
-      
-      // DoT
-      if(e.status.burnTimer > 0 || e.status.poisonTimer > 0) {
-        if(e.status.burnTimer > 0) e.status.burnTimer -= dt;
-        if(e.status.poisonTimer > 0) e.status.poisonTimer -= dt;
-        e.curHp -= (e.maxHp * 0.08) * dt; // 8% per sec
-        if(Math.random()<0.1) Env.particles.push(new Particle(e.x, e.y, 0, -20, e.status.burnTimer>0?'#f50':'#a0f', 0.5));
-      }
-      
-      if(e.x < 100) {
-        this.hp -= (e.type==='boss'?25:(e.type==='heavy'?15:5)); AudioSys.hit(); Vibrate([100]);
-        Env.spawnExplosion(100, e.y, e.clr); Env.enemies.splice(i,1); this.waveKilled++;
-      }
-    }
-    
-    // Projs update
-    for(let i=Env.projs.length-1; i>=0; i--) {
-      let p = Env.projs[i]; p.life -= dt;
-      if(p.life <= 0 || p.x<0 || p.x>GW || p.y<0 || p.y>GH) { Env.projs.splice(i,1); continue; }
-      
-      if(p.isEnemy) {
-        p.x += p.vx*dt; p.y += p.vy*dt;
-        if(p.x < 100) { this.hp -= p.dmg; AudioSys.hit(); Vibrate([100]); Env.spawnExplosion(100, p.y, p.clr); Env.projs.splice(i,1); }
-      } else {
-        // Homing logic
-        if(p.type.includes('homing') && Env.enemies.length>0) { p.tgt = Env.enemies[0]; }
-        let dx = p.tgt.x - p.x, dy = p.tgt.y - p.y; let dist = Math.hypot(dx,dy) || 1;
-        p.x += (dx/dist)*800*dt; p.y += (dy/dist)*800*dt;
-        
-        // Collision
-        let hitE = Env.enemies.find(e => Math.hypot(p.x-e.x, p.y-e.y) < e.size*1.5);
-        if(hitE) {
-          hitE.curHp -= p.dmg;
-          if(p.skill.includes('減速')) hitE.status.freezeTimer = 3;
-          if(p.skill.includes('持續')) hitE.status.burnTimer = 4;
-          if(p.skill.includes('毒')) hitE.status.poisonTimer = 4;
-          if(p.skill.includes('定身')) hitE.status.stunTimer = 1.5;
-          if(p.skill.includes('擊退')) hitE.x += 45;
-          if(p.type === 'blackhole' || p.skill.includes('黑洞')) Env.blackholes.push({x: p.x, y: p.y, life: 1.5});
-          
-          if(p.type === 'explosive' || p.skill.includes('爆破')) {
-            AudioSys.explosion();
-            Env.enemies.forEach(e2 => { if(e2!==hitE && Math.hypot(e2.x-p.x, e2.y-p.y)<150) e2.curHp -= p.dmg*0.5; });
-          }
-          Env.spawnExplosion(p.x, p.y, p.clr); Env.projs.splice(i,1);
-        }
-      }
-    }
-    
-    // Death check & Gold
-    for(let j=Env.enemies.length-1; j>=0; j--) {
-      if(Env.enemies[j].curHp <= 0) {
-        let e = Env.enemies[j];
-        Env.enemies.splice(j,1); this.waveKilled++; AudioSys.hit();
-        let drop = 5;
-        if(TURRETS_DB[State.equippedTurret].skill.includes("額外+10鑽")) drop += 10;
-        if(TURRETS_DB[State.equippedTurret].skill.includes("暴擊時+50鑽") && this.feverTimer>0) drop += 50;
-        State.coins += drop;
-      }
-    }
-    
-    // VFX Updates
-    Env.particles.forEach(p => p.update(dt)); Env.particles = Env.particles.filter(p => p.life>0);
-    Env.blackholes.forEach(bh => bh.life-=dt); Env.blackholes = Env.blackholes.filter(bh => bh.life>0);
-    Env.vfx.forEach(v => v.life-=dt); Env.vfx = Env.vfx.filter(v => v.life>0);
-    
-    // Win / Loss
-    if(this.hp <= 0) { this.active = false; UI.showResult(false); }
-    else if(this.waveKilled >= this.waveTot) {
-      this.active = false; State.coins += 150; // Pass reward
-      if(this.route==='vocab' && this.level===State.maxStageVocab) State.maxStageVocab++;
-      if(this.route==='grammar' && this.level===State.maxStageGrammar) State.maxStageGrammar++;
-      SaveSys.save(); UI.showResult(true);
-    }
-  },
-  
-  draw(ctx) {
-    if(!this.active) return;
-    
-    let hpBar = document.getElementById('combat-hp-fill');
-    hpBar.style.width = `${Math.max(0, this.hp)}%`; hpBar.style.background = this.hp>50 ? '#0f0' : (this.hp>20 ? '#ff0' : '#f00');
-    document.getElementById('combat-enemies').textContent = `剩餘: ${this.waveTot - this.waveKilled}`;
-    
-    let tBar = document.getElementById('qa-timer');
-    tBar.style.width = `${(Math.max(0,this.qTimer)/this.qMax)*100}%`;
-    tBar.style.background = this.overheatTimer>0 ? 'var(--err)' : (this.qTimer>4.5 ? 'var(--succ)' : 'var(--p-color)');
-    
-    ctx.clearRect(0,0,GW,GH);
-    let base = {x: 60, y: GH/2};
-    drawMechaBase(ctx, base.x, base.y, this.hp/100);
-    
-    let aimX = Env.enemies.length>0 ? Env.enemies[0].x : GW; let aimY = Env.enemies.length>0 ? Env.enemies[0].y : GH/2;
-    let angle = Math.atan2(aimY - base.y, aimX - base.x);
-    drawTurretGun(ctx, State.equippedTurret, base.x, base.y-20, angle, this.recoil, 1.2);
-    
-    // Effects
-    Env.blackholes.forEach(bh => {
-      ctx.save(); ctx.translate(bh.x, bh.y); ctx.rotate(Date.now()*0.01);
-      ctx.fillStyle='rgba(0,0,0,0.8)'; ctx.beginPath(); ctx.arc(0,0, 60, 0, Math.PI*2); ctx.fill();
-      ctx.strokeStyle='#a0f'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0, 65, 0, Math.PI*2); ctx.stroke();
-      ctx.restore();
-    });
-    
-    Env.vfx.forEach(v => {
-      if(v.type === 'laser') {
-        ctx.globalAlpha = v.life/0.3; ctx.strokeStyle = v.clr; ctx.lineWidth = v.thick;
-        ctx.beginPath(); ctx.moveTo(base.x+30, v.y); ctx.lineTo(GW, v.y); ctx.stroke();
-        ctx.lineWidth = v.thick/2; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.globalAlpha = 1;
-      }
-      if(v.type === 'chain') {
-        ctx.globalAlpha = v.life/0.3; ctx.strokeStyle = v.clr; ctx.lineWidth = 5;
-        ctx.beginPath(); ctx.moveTo(v.pts[0].x, v.pts[0].y);
-        for(let i=1; i<v.pts.length; i++) {
-          let midX = (v.pts[i-1].x + v.pts[i].x)/2 + (Math.random()-0.5)*50;
-          let midY = (v.pts[i-1].y + v.pts[i].y)/2 + (Math.random()-0.5)*50;
-          ctx.lineTo(midX, midY); ctx.lineTo(v.pts[i].x, v.pts[i].y);
-        }
-        ctx.stroke(); ctx.globalAlpha = 1;
-      }
-    });
-    
-    Env.enemies.forEach(e => drawMonster(ctx, e, e.x, e.y, e.anim, e.status));
-    Env.projs.forEach(p => drawGlow(ctx, p.x, p.y, p.isEnemy?8:6, p.clr, 0.9));
-    Env.particles.forEach(p => p.draw(ctx));
-    
-    if(this.timestopTimer > 0) { ctx.fillStyle='rgba(200,200,255,0.2)'; ctx.fillRect(0,0,GW,GH); }
-  }
-};
-
-/* ==========================================================================
-   6. Main Menu Background Demo
-   ========================================================================== */
-let Demo = {
-  anim: 0, projs: [], enemies: [], parts: [],
-  update(dt) {
-    if(GW === 0) return; this.anim += dt;
-    if(Math.random() < 0.01 && this.enemies.length < 3) {
-      let d = MONSTERS_DB[Math.floor(Math.random()*42)];
-      this.enemies.push({x: GW+20, y: GH/2-50 + (Math.random()*100), def: d, anim:0, status:{}});
-    }
-    if(Math.random() < 0.03 && this.enemies.length>0) {
-      this.projs.push({x: 60, y: GH/2, tx: this.enemies[0].x, ty: this.enemies[0].y});
-    }
-    
-    for(let i=this.enemies.length-1; i>=0; i--) {
-      let e = this.enemies[i]; e.anim+=dt; e.x -= 30*dt;
-      if(e.x < 100) this.enemies.splice(i,1);
-    }
-    for(let i=this.projs.length-1; i>=0; i--) {
-      let p = this.projs[i]; let dx=p.tx-p.x, dy=p.ty-p.y; let dist=Math.hypot(dx,dy)||1;
-      p.x += (dx/dist)*600*dt; p.y += (dy/dist)*600*dt;
-      if(p.x>GW) this.projs.splice(i,1);
-      else {
-        let hit = this.enemies.findIndex(e => Math.hypot(p.x-e.x, p.y-e.y)<30);
-        if(hit>=0) {
-          for(let k=0;k<10;k++) this.parts.push({x:p.x, y:p.y, vx:(Math.random()-0.5)*150, vy:(Math.random()-0.5)*150, l:0.3, ml:0.3});
-          this.projs.splice(i,1); this.enemies.splice(hit,1);
-        }
-      }
-    }
-    this.parts.forEach(p => { p.x+=p.vx*dt; p.y+=p.vy*dt; p.l-=dt; }); this.parts = this.parts.filter(p=>p.l>0);
-  },
-  draw(ctx) {
-    ctx.clearRect(0,0,GW,GH);
-    ctx.fillStyle = 'rgba(5, 10, 25, 0.7)'; ctx.fillRect(0,0,GW,GH);
-    
-    ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)'; ctx.lineWidth = 1;
-    let scroll = (this.anim*20) % 50;
-    for(let i=-50; i<GW; i+=50) { ctx.beginPath(); ctx.moveTo(i+scroll, GH/2); ctx.lineTo(i+scroll-200, GH); ctx.stroke(); }
-    for(let y=GH/2; y<GH; y+=40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(GW, y); ctx.stroke(); }
-    
-    drawMechaBase(ctx, 60, GH/2); drawTurretGun(ctx, State.equippedTurret, 60, GH/2-20, 0, 0, 1.2);
-    this.enemies.forEach(e => drawMonster(ctx, e.def, e.x, e.y, e.anim, {}));
-    this.projs.forEach(p => drawGlow(ctx, p.x, p.y, 6, '#0ff', 1));
-    this.parts.forEach(p => drawGlow(ctx, p.x, p.y, 4, '#0ff', p.l/p.ml));
-  }
-};
-
-/* ==========================================================================
-   7. UI Controllers & Gacha System
-   ========================================================================== */
-const UI = {
-  activeModal: null,
-  init() { document.querySelectorAll('.opt-btn').forEach((btn, i) => { btn.addEventListener('pointerdown', (e) => { e.preventDefault(); Combat.answer(i); }); }); this.showMenu(); },
-  updateBadges() {
-    document.getElementById('hud-coins').textContent = State.coins; document.getElementById('mg-coins').textContent = State.coins;
-    document.getElementById('mistake-cnt').textContent = `(${State.mistakes.length})`;
-    let ranks = ["見習詞彙兵", "初級防衛者", "中級破陣者", "高階戰術家", "學測征服者", "傳說戰神"];
-    document.getElementById('cmd-rank').textContent = ranks[Math.min(5, Math.floor((State.maxStageVocab + State.maxStageGrammar)/30))];
-    
-    document.getElementById('prog-txt-vocab').textContent = `第 ${State.maxStageVocab} 關`; document.getElementById('prog-bar-vocab').style.width = `${State.maxStageVocab}%`;
-    document.getElementById('prog-txt-grammar').textContent = `第 ${State.maxStageGrammar} 關`; document.getElementById('prog-bar-grammar').style.width = `${State.maxStageGrammar}%`;
-    
-    document.getElementById('dex-prog-txt').textContent = `${State.dex.length}/42`; document.getElementById('gacha-badge').style.display = State.coins >= 100 ? 'block' : 'none';
-    
-    let t = TURRETS_DB[State.equippedTurret];
-    document.getElementById('hangar-name').innerHTML = `${t.name} <span style="font-size:16px; color:var(--gold);">Lv.${State.turretLvls[t.id]}</span>`;
-    document.getElementById('hangar-rare').textContent = t.rare; document.getElementById('hangar-rare').style.background = RARE_COLORS[t.rare];
-    document.getElementById('hangar-skill').textContent = `技能: ${t.skill}`;
-  },
-  showMenu() { this.closeAll(); document.getElementById('main-menu').classList.add('active'); this.updateBadges(); },
-  showCombat() { this.closeAll(); document.getElementById('combat-ui').classList.add('active'); },
-  closeAll() { document.querySelectorAll('.screen, .modal-overlay').forEach(el => el.classList.remove('active')); this.activeModal = null; },
-  openModal(id) { if(this.activeModal) document.getElementById(this.activeModal).classList.remove('active'); document.getElementById(id).classList.add('active'); this.activeModal = id; },
-  closeModal(id) { document.getElementById(id).classList.remove('active'); this.activeModal = null; },
-  
-  openStageSelect(route) {
-    let max = route === 'vocab' ? State.maxStageVocab : State.maxStageGrammar;
-    document.getElementById('ms-title').textContent = route === 'vocab' ? "單字征途" : "文法試煉";
-    let grid = document.getElementById('ms-grid'); grid.innerHTML = '';
-    let selStage = max;
-    for(let i=1; i<=100; i++) {
-      let btn = document.createElement('div'); btn.className = 'btn'; btn.style.padding='15px';
-      if(i <= max) {
-        btn.textContent = i; if(i === selStage) btn.style.background = 'var(--p-color)'; btn.style.color = i === selStage ? '#000' : 'var(--p-color)';
-        btn.onclick = () => { grid.querySelectorAll('.btn').forEach(b=>{b.style.background='var(--btn-bg)'; b.style.color='var(--p-color)';}); btn.style.background='var(--p-color)'; btn.style.color='#000'; selStage = i; };
-      } else { btn.style.opacity = '0.3'; btn.innerHTML = '🔒'; btn.style.pointerEvents = 'none'; }
-      grid.appendChild(btn);
-    }
-    document.getElementById('ms-start-btn').onclick = () => { this.closeModal('modal-stage'); Combat.start(route, selStage); }; this.openModal('modal-stage');
-  },
-  
-  openGacha() {
-    let inv = document.getElementById('mg-inv'); inv.innerHTML = '';
-    TURRETS_DB.forEach(t => {
-      let d = document.createElement('div'); d.className = 'card-item';
-      let has = State.turrets.includes(t.id); if(!has) d.classList.add('locked'); if(State.equippedTurret === t.id) d.style.borderColor = '#0f0';
-      d.innerHTML = `<div style="color:${RARE_COLORS[t.rare]}; font-size:14px; font-weight:bold;">${t.rare}</div>
-                     <div style="font-size:14px; margin:8px 0; font-weight:bold;">${has ? t.name : '???'}</div>
-                     ${has ? `<div style="font-size:12px; color:var(--gold);">Lv.${State.turretLvls[t.id]}</div>` : ''}`;
-      if(has) d.onclick = () => this.openTurretDetail(t.id, true); inv.appendChild(d);
-    });
-    this.openModal('modal-gacha');
-  },
-  
-  openTurretDetail(tid, fromGacha=false) {
-    const t = TURRETS_DB[tid]; document.getElementById('td-name').textContent = t.name; document.getElementById('td-rare').textContent = t.rare; document.getElementById('td-rare').style.background = RARE_COLORS[t.rare];
-    document.getElementById('td-level').textContent = `Lv.${State.turretLvls[tid]||1}`; document.getElementById('td-type').textContent = t.desc; document.getElementById('td-skill').textContent = t.skill;
-    let btn = document.getElementById('td-equip-btn');
-    if(State.equippedTurret === tid) { btn.textContent = "已裝備"; btn.disabled = true; }
-    else { btn.textContent = "裝備出戰"; btn.disabled = false; btn.onclick = () => { State.equippedTurret = tid; SaveSys.save(); UI.updateBadges(); this.closeModal('modal-turret'); if(fromGacha) this.openGacha(); }; }
-    this.openModal('modal-turret'); this.previewTurretId = tid;
-  },
-  
-  openDex() {
-    document.getElementById('md-count').textContent = State.dex.length; let list = document.getElementById('md-list'); list.innerHTML = '';
-    MONSTERS_DB.forEach(m => {
-      let has = State.dex.includes(m.id); let d = document.createElement('div'); d.className = 'card-item'; if(!has) d.classList.add('locked');
-      d.innerHTML = `<div style="color:${has?m.clr:'#555'}; font-weight:bold; font-size:18px;">${has?m.name:'???'}</div>
-                     <div style="font-size:14px; color:#aaa; margin-top:8px;">${m.type}</div>`;
-      if(has) d.onclick = () => this.openDexPreview(m.id); list.appendChild(d);
-    });
-    this.openModal('modal-dex');
-  },
-  
-  openDexPreview(mid) {
-    this.previewMonsterId = mid; const m = MONSTERS_DB[mid];
-    document.getElementById('dp-name').textContent = m.name; document.getElementById('dp-name').style.color = m.clr;
-    document.getElementById('dp-type').textContent = `屬性：${m.type} / 速度：${m.spd} / 基礎血量：${m.hp}`;
-    document.getElementById('dp-lore').textContent = `【傳說解密】\n這隻名為 ${m.name} 的神話生物，據說是從古老的文獻中甦醒過來。牠擁有強大的破壞力，專門考驗詞彙兵的反應速度。在戰場上請務必小心應對！`;
-    this.openModal('modal-dex-preview');
-  },
-  
-  openMistakes() {
-    let list = document.getElementById('mm-list'); list.innerHTML = '';
-    if(State.mistakes.length === 0) { list.innerHTML = '<div style="text-align:center; color:#555; padding:20px; font-size:18px;">尚無錯題紀錄，繼續保持！</div>'; }
-    else {
-      State.mistakes.forEach(m => {
-        let d = document.createElement('div'); d.className = 'list-row';
-        d.innerHTML = `<div style="font-weight:bold; font-size:18px; margin-bottom:10px;">${m.q}</div>
-                       <div style="color:var(--succ); font-size:16px; margin-bottom:5px;">正確: ${m.ans}</div><div style="color:var(--p-color); font-size:14px;">💡 ${m.exp}</div>`;
-        list.appendChild(d);
-      });
-    }
-    this.openModal('modal-mistakes');
-  },
-  
-  showResult(win) {
-    let oldDex = State.dex.length;
-    document.getElementById('res-title').textContent = win ? "VICTORY！完全勝利！" : "DEFEAT！防線崩潰！"; document.getElementById('res-title').style.color = win ? "var(--gold)" : "var(--err)";
-    document.getElementById('res-stage').textContent = `${Combat.route==='vocab'?'單字征途':'文法試煉'} 第 ${Combat.level} 關`;
-    document.getElementById('res-reward').textContent = win ? "獲得 +150 💎" : "獲得 +0 💎";
-    document.getElementById('res-stats').textContent = `答對率: ${Combat.stats.ansTot > 0 ? Math.round((Combat.stats.ansCor/Combat.stats.ansTot)*100) : 0}%`;
-    document.getElementById('res-new-monster').style.display = (win && State.dex.length > oldDex) ? 'block' : 'none';
-    document.getElementById('res-next-btn').style.display = win ? 'block' : 'none';
-    this.openModal('modal-result'); if(win) { AudioSys.init(); AudioSys.victory(); }
-  },
-  
-  previewTurretId: -1, previewMonsterId: -1,
-  renderModals() {
-    if(!this.activeModal || this.activeModal === 'modal-gacha') {
-      let hc = document.getElementById('hangar-canvas');
-      if(hc) { let hctx = hc.getContext('2d'); hctx.clearRect(0,0,hc.width,hc.height); hctx.save(); hctx.translate(hc.width/2, hc.height/2+20); drawMechaBase(hctx, 0, 0); drawTurretGun(hctx, State.equippedTurret, 0, -20, Math.sin(Date.now()*0.002)*0.1, 0, 1.3); hctx.restore(); }
-    }
-    if(this.activeModal === 'modal-turret' && this.previewTurretId >= 0) {
-      let tc = document.getElementById('td-canvas-temp');
-      if(tc) { let tctx = tc.getContext('2d'); tctx.clearRect(0,0,tc.width,tc.height); tctx.save(); tctx.translate(tc.width/2, tc.height/2+30); drawMechaBase(tctx, 0, 0); drawTurretGun(tctx, this.previewTurretId, 0, -20, (Date.now()*0.002) % (Math.PI*2), 0, 1.8); tctx.restore(); }
-    }
-    if(this.activeModal === 'modal-dex-preview' && this.previewMonsterId >= 0) {
-      let dc = document.getElementById('dp-canvas-temp');
-      if(dc) { let dctx = dc.getContext('2d'); dctx.clearRect(0,0,dc.width,dc.height); dctx.save(); dctx.translate(dc.width/2, dc.height/2); drawMonster(dctx, MONSTERS_DB[this.previewMonsterId], 0, 0, Date.now()*0.001, {}); dctx.restore(); }
-    }
-  }
-};
-
-const Gacha = {
-  pull(times) {
-    let cost = times === 1 ? 100 : 900; if(State.coins < cost) { alert("鑽石不足！"); return; }
-    State.coins -= cost; SaveSys.save(); UI.openModal('gacha-anim');
-    document.getElementById('g-result-grid').style.display = 'none'; document.getElementById('g-circle').style.display = 'flex'; document.getElementById('gacha-skip-btn').style.display = 'block';
-    AudioSys.init(); AudioSys.play(200, 'sawtooth', 1.5, 0.2); Vibrate([100, 50, 100, 50, 300]);
-    let results = [];
-    for(let i=0; i<times; i++) {
-      let r = Math.random(), pool = [];
-      if(times === 10 && i === 9) pool = TURRETS_DB.filter(t => t.rare === 'SR' || t.rare === 'UR');
-      else {
-        if(r < 0.02) pool = TURRETS_DB.filter(t => t.rare === 'UR'); else if(r < 0.12) pool = TURRETS_DB.filter(t => t.rare === 'SR'); else if(r < 0.40) pool = TURRETS_DB.filter(t => t.rare === 'R'); else pool = TURRETS_DB.filter(t => t.rare === 'N');
-      }
-      let get = pool[Math.floor(Math.random() * pool.length)]; results.push(get);
-      if(State.turrets.includes(get.id)) State.turretLvls[get.id]++; else { State.turrets.push(get.id); State.turretLvls[get.id] = 1; }
-    }
-    SaveSys.save(); this.animTid = setTimeout(() => { this.showResultCards(results); }, 1500);
-  },
-  showResultCards(arr) {
-    document.getElementById('g-circle').style.display = 'none'; let grid = document.getElementById('g-result-grid'); grid.style.display = 'grid'; grid.innerHTML = ''; let maxRare = 'N';
-    arr.forEach((d, i) => {
-      if(d.rare === 'UR') maxRare = 'UR'; else if(d.rare === 'SR' && maxRare !== 'UR') maxRare = 'SR';
-      setTimeout(() => {
-        let card = document.createElement('div'); card.className = 'card-item'; card.style.borderColor = d.clr; card.style.animation = 'pulse 0.3s ease-out';
-        card.innerHTML = `<div style="font-size:14px; color:${RARE_COLORS[d.rare]}">${d.rare}</div><div style="font-weight:bold; font-size:16px; margin-top:5px;">${d.name}</div>`;
-        grid.appendChild(card);
-        if(d.rare === 'UR' || d.rare === 'SR') { AudioSys.gachaSR(); Vibrate([50,30,50,30,100]); } else { AudioSys.hit(); Vibrate([30]); }
-      }, i * 150);
-    });
-    if(maxRare==='UR' || maxRare==='SR') { document.getElementById('gacha-anim').style.background = 'rgba(255,255,255,0.9)'; setTimeout(()=> document.getElementById('gacha-anim').style.background = '#000', 500); }
-    document.getElementById('gacha-skip-btn').textContent = "完成"; document.getElementById('gacha-skip-btn').onclick = () => { UI.openGacha(); };
-  },
-  skip() { clearTimeout(this.animTid); UI.openGacha(); }
-};
-
-const Game = {
-  claimDaily() { let now = Date.now(); if(now - State.lastDaily > 86400000) { State.coins += 150; State.lastDaily = now; SaveSys.save(); UI.updateBadges(); alert("領取每日補給 150 💎"); } else { alert("今天已經領取過囉！"); } },
-  nextStage() { UI.closeAll(); Combat.start(Combat.route, Math.min(100, Combat.level + 1)); }
-};
-
-/* ==========================================================================
-   8. Main Engine Loop
-   ========================================================================== */
-let lastTime = 0, fpsTimer=0, frames=0;
-
-function gameLoop(timestamp) {
-  if(!GW || !GH) { lastTime=timestamp; requestAnimationFrame(gameLoop); return; }
-  let dt = Math.min(0.1, (timestamp - lastTime) / 1000); lastTime = timestamp;
-  frames++; fpsTimer+=dt; if(fpsTimer >= 1) { document.getElementById('fps-counter').textContent = `FPS: ${frames}`; frames=0; fpsTimer=0; }
-  
-  if(document.getElementById('main-menu').classList.contains('active')) { Demo.update(dt); Demo.draw(CTX.bg); } else { CTX.bg.clearRect(0,0,GW,GH); }
-  if(Combat.active) { Combat.update(dt); Combat.draw(CTX.gm); } else { CTX.gm.clearRect(0,0,GW,GH); }
-  
-  UI.renderModals(); loopId = requestAnimationFrame(gameLoop);
-}
-
-document.addEventListener("visibilitychange", () => {
-  if(document.hidden && loopId) { cancelAnimationFrame(loopId); loopId=null; }
-  else if(!document.hidden && !loopId) { lastTime = performance.now(); loopId = requestAnimationFrame(gameLoop); }
 });
 
-SaveSys.load(); UI.init(); lastTime = performance.now(); loopId = requestAnimationFrame(gameLoop);
-</script>
-</body>
-</html>
+// --- 全域狀態與存檔 ---
+let Save = {
+    ver: 1, diam: 500, sound: true,
+    progress: { vocab: 1, grammar: 1 },
+    towers: { 'P01': 1 }, eqTower: 'P01',
+    unlockedMonsters: [], wrongBook: []
+};
+function loadSave() {
+    let s = localStorage.getItem('mythTD_save');
+    if(s) { Save = {...Save, ...JSON.parse(s)}; }
+    updateUI();
+}
+function saveGame() { localStorage.setItem('mythTD_save', JSON.stringify(Save)); }
+function resetSave() {
+    localStorage.removeItem('mythTD_save');
+    location.reload();
+}
+function addDiamonds(amt) { Save.diam += amt; saveGame(); updateUI(); }
+function updateUI() {
+    document.getElementById('diamond-count').innerText = Save.diam;
+    document.getElementById('vocab-progress').innerText = `進度：第 ${Save.progress.vocab} / 100 關`;
+    document.getElementById('grammar-progress').innerText = `進度：第 ${Save.progress.grammar} / 100 關`;
+    
+    let ranks = ['列兵', '少尉', '上尉', '少校', '上校', '將軍', '元帥'];
+    let totalLevels = Save.progress.vocab + Save.progress.grammar;
+    let rankIdx = Math.min(Math.floor(totalLevels / 30), ranks.length - 1);
+    document.getElementById('player-rank').innerText = ranks[rankIdx];
+    
+    let eqT = TOWER_DATA.find(t => t.id === Save.eqTower);
+    if(eqT) document.getElementById('hangar-tower-name').innerText = `${eqT.rarity} ${eqT.name} Lv.${Save.towers[eqT.id]}`;
+    document.getElementById('monster-col-txt').innerText = `圖鑑 ${Save.unlockedMonsters.length}/42`;
+}
+
+// --- 音效系統 (Web Audio API) ---
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function initAudio() { if(!audioCtx) audioCtx = new AudioCtx(); }
+function toggleAudio() { Save.sound = !Save.sound; saveGame(); }
+function playSynth(type) {
+    if(!Save.sound) return;
+    initAudio();
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    let now = audioCtx.currentTime;
+    
+    if(type === 'shoot') {
+        osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now); osc.stop(now + 0.1);
+    } else if(type === 'hit') {
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+        gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+    } else if(type === 'correct') {
+        osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now); // C5
+        osc.frequency.setValueAtTime(659.25, now+0.1); // E5
+        gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0, now + 0.3);
+        osc.start(now); osc.stop(now + 0.3);
+    } else if(type === 'wrong') {
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(100, now + 0.4);
+        gain.gain.setValueAtTime(0.4, now); gain.gain.linearRampToValueAtTime(0, now + 0.4);
+        osc.start(now); osc.stop(now + 0.4);
+    } else if(type === 'gacha_sr') {
+        // Arpeggio
+        [440, 554, 659, 880].forEach((freq, i) => {
+            let o = audioCtx.createOscillator(); let g = audioCtx.createGain();
+            o.type = 'sine'; o.frequency.value = freq;
+            g.gain.setValueAtTime(0.2, now + i*0.1); g.gain.exponentialRampToValueAtTime(0.01, now + i*0.1 + 0.5);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(now + i*0.1); o.stop(now + i*0.1 + 0.5);
+        });
+    } else if(type === 'victory') {
+        osc.type = 'square'; osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(554, now+0.2); osc.frequency.setValueAtTime(659, now+0.4);
+        gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0, now + 1.0);
+        osc.start(now); osc.stop(now + 1.0);
+    }
+}
+function vibrate(ms) { if(Save.sound && navigator.vibrate) navigator.vibrate(ms); }
+
+// --- 繪圖引擎共用 ---
+function drawGlow(ctx, x, y, r, color, alpha=0.5) {
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+    ctx.fillStyle = color.replace(')', `, ${alpha})`).replace('rgb', 'rgba');
+    ctx.fill();
+}
+// 塔繪製 (2.5D)
+function drawTower(ctx, towerObj, x, y, angle, scale=1) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
+    // 底座
+    ctx.fillStyle = '#223';
+    ctx.beginPath(); ctx.moveTo(-30, 20); ctx.lineTo(30, 20); ctx.lineTo(20, -10); ctx.lineTo(-20, -10); ctx.fill();
+    ctx.strokeStyle = '#0ff'; ctx.lineWidth = 1; ctx.stroke();
+    
+    // 稀有度光環
+    let auraColors = { 'N': 'rgba(0,100,255,', 'R': 'rgba(150,0,255,', 'SR': 'rgba(255,200,0,', 'UR': 'rgba(255,0,255,' };
+    let c = auraColors[towerObj.rarity] || auraColors['N'];
+    drawGlow(ctx, 0, 10, 40, c+'1)', 0.2);
+
+    ctx.rotate(angle);
+    // 砲管
+    ctx.fillStyle = '#555';
+    let recoil = towerObj.cooldown > 0 ? -5 : 0; // 模擬後座力
+    if(towerObj.rarity === 'N' || towerObj.rarity === 'R') {
+        ctx.fillRect(0, -5, 35 + recoil, 10);
+    } else {
+        ctx.fillRect(0, -10, 40 + recoil, 8);
+        ctx.fillRect(0, 2, 40 + recoil, 8);
+    }
+    // 機體中心
+    ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2);
+    ctx.fillStyle = '#334'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.stroke();
+    
+    // 砲口焰
+    if(towerObj.cooldown > (1/towerObj.fireRate - 0.1)) {
+        ctx.fillStyle = '#fa0';
+        ctx.beginPath(); ctx.moveTo(40, -5); ctx.lineTo(55, 0); ctx.lineTo(40, 5); ctx.fill();
+    }
+    ctx.restore();
+}
+
+// 怪物繪製 (42種特徵實作)
+function drawMonster(ctx, mType, x, y, scale, time) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
+    
+    // 影子
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.beginPath(); ctx.ellipse(0, 20, 20, 8, 0, 0, Math.PI*2); ctx.fill();
+
+    // 呼吸/行走起伏
+    let bob = Math.sin(time * 5) * 3;
+    ctx.translate(0, bob);
+    
+    // 依據 ID 繪製特徵 (由於空間限制，示範幾種核心結構，其餘共用但改變顏色/角/翼)
+    let m = parseInt(mType.replace('M',''));
+    
+    if(m === 1 || m === 32) { // 蛇頸龍/海棲
+        ctx.fillStyle = m===1 ? '#2a8' : '#228';
+        ctx.beginPath(); ctx.moveTo(-20, 15); ctx.quadraticCurveTo(-10, -30, 10, -20); ctx.quadraticCurveTo(20, -10, 20, 15); ctx.fill(); // 身體
+        ctx.beginPath(); ctx.arc(10, -25, 6, 0, Math.PI*2); ctx.fill(); // 頭
+    } else if (m === 2) { // 九尾
+        ctx.fillStyle = '#fa2';
+        for(let i=0; i<9; i++) {
+            ctx.save();
+            ctx.rotate(-Math.PI/2 + (i-4)*0.2 + Math.sin(time*2+i)*0.1);
+            ctx.beginPath(); ctx.ellipse(0, 15, 4, 15, 0, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+        }
+        ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fill(); // 身體
+    } else if (m === 29 || m === 36) { // 觸手系 (克拉肯/克蘇魯)
+        ctx.fillStyle = m===29 ? '#82a' : '#262';
+        ctx.beginPath(); ctx.arc(0, -10, 15, 0, Math.PI*2); ctx.fill();
+        for(let i=0; i<6; i++) {
+            let tx = Math.cos(i) * 15 + Math.sin(time*3+i)*5;
+            let ty = 10 + Math.sin(i) * 5;
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(tx/2, ty+10, tx, ty);
+            ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = 4; ctx.stroke();
+        }
+    } else if (m >= 15 && m <= 20) { // 巨獸系
+        ctx.fillStyle = m===15 ? '#842' : m===17 ? '#ddd' : '#555';
+        ctx.fillRect(-15, -20, 30, 40); // 寬身體
+        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, -25, 10, 0, Math.PI*2); ctx.fill(); // 頭
+        if(m===15) { // 牛角
+            ctx.strokeStyle='#fff'; ctx.lineWidth=2; 
+            ctx.beginPath(); ctx.moveTo(-8,-30); ctx.quadraticCurveTo(-15,-40, -20,-35); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(8,-30); ctx.quadraticCurveTo(15,-40, 20,-35); ctx.stroke();
+        }
+    } else if (m===3 || m===34 || m===35) { // 飛行翼族
+        ctx.fillStyle = m===3 ? '#333' : m===34 ? '#252' : '#f51';
+        let wingY = Math.sin(time*10) * 10;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-20, -10+wingY); ctx.lineTo(-30, 10+wingY); ctx.fill(); // 左翼
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(2
