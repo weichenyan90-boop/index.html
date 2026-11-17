@@ -112,12 +112,11 @@
         .option-btn:active { transform: scale(0.95); background: #225; }
         .option-btn.correct { background: #008800; border-color: #00ff00; }
         .option-btn.wrong { background: #880000; border-color: #ff0000; }
-        .option-btn.ink-blurred { filter: blur(4px) brightness(0.5); pointer-events: none; }
         
         .timer-bar { height: 4px; background: #333; border-radius: 2px; overflow: hidden; margin-bottom: 5px; }
         .timer-fill { height: 100%; background: #00d2ff; width: 100%; transform-origin: left; }
         
-        /* 彈窗共通 (全螢幕捲動) */
+        /* 彈窗共通 */
         .modal {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); z-index: 100;
@@ -272,7 +271,7 @@
             </div>
         </div>
 
-        <!-- 選關彈窗 -->
+        <!-- 選關與各種彈窗 -->
         <div id="stage-modal" class="modal hidden">
             <div class="modal-header">
                 <div class="modal-title" id="stage-modal-title">單字征途</div>
@@ -280,8 +279,6 @@
             </div>
             <div class="stage-grid" id="stage-grid-container"></div>
         </div>
-
-        <!-- 裝備圖鑑彈窗 -->
         <div id="tower-modal" class="modal hidden">
             <div class="modal-header">
                 <div class="modal-title">砲塔裝備庫</div>
@@ -289,8 +286,6 @@
             </div>
             <div class="card-list" id="tower-list-container"></div>
         </div>
-
-        <!-- 怪物圖鑑彈窗 -->
         <div id="monster-modal" class="modal hidden">
             <div class="modal-header">
                 <div class="modal-title">神話與傳說異聞錄</div>
@@ -298,8 +293,6 @@
             </div>
             <div class="card-list" id="monster-list-container"></div>
         </div>
-
-        <!-- 轉蛋彈窗 -->
         <div id="gacha-modal" class="modal hidden">
             <div class="modal-header">
                 <div class="modal-title">星際召喚陣</div>
@@ -314,8 +307,6 @@
                 <button class="route-btn" style="padding:15px; font-size:16px; width: 140px; text-align:center; border-color:#ffd700;" onclick="performGacha(10)">10 連抽<br><span style="color:#ffd700">900 💎</span><br><span style="font-size:10px;color:#aaa">保底 SR</span></button>
             </div>
         </div>
-        
-        <!-- 系統管理 -->
         <div id="sys-modal" class="modal hidden">
             <div class="modal-header">
                 <div class="modal-title">指揮官終端</div>
@@ -325,24 +316,274 @@
                 <button class="nav-btn" style="background:#800" onclick="resetSave()">⚠️ 刪除進度 (重置為第 1 關)</button>
             </div>
         </div>
-
-        <!-- 轉蛋動畫遮罩 -->
         <div id="gacha-fx-layer" class="hidden">
             <button id="gacha-skip" onclick="skipGacha()">跳過動畫 ➔</button>
             <canvas id="gacha-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index: 200; pointer-events:none;"></canvas>
             <div class="gacha-result-grid" id="gacha-result"></div>
             <button id="gacha-ok-btn" class="hidden" style="z-index:202; margin-top:20px; padding:10px 30px; background:var(--ui-blue); color:black; font-weight:bold; border-radius:20px; border:none;" onclick="closeGachaFx()">確認</button>
         </div>
-
     </div>
 
 <script>
-/**
- * 高品質 160 題庫 (無重複機制專用)
- * 格式：路線|難度(1-4)|題幹|A|B|C|D|答案索引(0-3)|解析
- */
+// =========================================
+// 1. 160 題庫系統
+// =========================================
 const Q_RAW = `
-vocab|1|It is difficult to ______ the language barrier.|overcome|overlook|overtake|overdo|0|overcome 克服
+vocab|1|I really ______ your help with my math homework.|appreciate|apologize|approach|approve|0|appreciate 感激
+vocab|1|The ______ temperature in summer here is around 30 degrees.|average|available|anxious|awkward|0|average 平均的
+vocab|1|Parents should pay attention to their children's ______ at school.|behavior|belonging|benefit|boundary|0|behavior 行為
+vocab|1|Reading every day brings many ______ to your brain.|benefits|barriers|burdens|budgets|0|benefit 好處/益處
+vocab|1|Climbing Mount Jade is a big ______ for beginners.|challenge|channel|chapter|charity|0|challenge 挑戰
+vocab|1|Global warming is changing the Earth's ______ rapidly.|climate|closet|column|comedy|0|climate 氣候
+vocab|1|This sofa is very ______ to sit on after a long day.|comfortable|comparable|competitive|complicated|0|comfortable 舒適的
+vocab|1|If you ______ the two phones, you will see the difference.|compare|compete|complain|complete|0|compare 比較
+vocab|1|Over fifty runners will ______ in the final race tomorrow.|compete|compose|compute|confuse|0|compete 競爭/比賽
+vocab|1|Customers often ______ about the slow delivery service.|complain|contain|confirm|connect|0|complain 抱怨
+vocab|1|You must ______ the application form before Friday.|complete|compete|complain|compare|0|complete 完成
+vocab|1|Air pollution is a major ______ for people living in big cities.|concern|concert|concept|conduct|0|concern 憂慮/關心的事
+vocab|1|Please call the hotel to ______ your room reservation.|confirm|confuse|conquer|consist|0|confirm 確認
+vocab|1|We should ______ all possibilities before making a decision.|consider|consist|consult|consume|0|consider 考慮
+vocab|1|This drink does not ______ any artificial sugar.|contain|obtain|maintain|sustain|0|contain 包含
+vocab|1|Taking the MRT is the most ______ way to travel in Taipei.|convenient|confident|consistent|constant|0|convenient 方便的
+vocab|1|He tried to ______ his parents to let him study abroad.|convince|convey|convert|convict|0|convince 說服
+vocab|1|All team members must ______ closely to finish on time.|cooperate|operate|decorate|celebrate|0|cooperate 合作
+vocab|1|The artist used recycled wood to ______ a giant sculpture.|create|credit|critic|crisis|0|create 創造
+vocab|1|Children are naturally ______ about how things work.|curious|furious|serious|various|0|curious 好奇的
+vocab|1|The shop assistant greeted every ______ with a warm smile.|customer|custom|costume|council|0|customer 顧客
+vocab|1|The number of traffic accidents has ______ this year.|decreased|increased|released|diseased|0|decrease 減少
+vocab|1|The postman will ______ the package to your house today.|deliver|recover|discover|uncover|0|deliver 遞送
+vocab|1|Whether we go hiking will ______ on the weather tomorrow.|depend|defend|demand|descend|0|depend 取決於
+vocab|1|Can you ______ what the lost bag looks like?|describe|prescribe|subscribe|inscribe|0|describe 描述
+vocab|2|Plants ______ carbon dioxide and release oxygen.|absorb|observe|preserve|reserve|0|absorb 吸收
+vocab|2|The car began to ______ as it entered the highway.|accelerate|celebrate|decorate|tolerate|0|accelerate 加速
+vocab|2|Students need a password to ______ the school's Wi-Fi.|access|assess|assist|assert|0|access 存取/進入
+vocab|2|The new hotel can ______ up to five hundred guests.|accommodate|accumulate|accompany|accomplish|0|accommodate 容納
+vocab|2|Children under twelve must be ______ by an adult.|accompanied|accomplished|accustomed|acknowledged|0|accompany 陪伴
+vocab|2|Dust will quickly ______ if you don't clean your room.|accumulate|calculate|circulate|stimulate|0|accumulate 累積
+vocab|2|The police ______ him of stealing the diamond ring.|accused|excused|refused|confused|0|accuse 指控
+vocab|2|He refused to ______ that he had made a serious mistake.|acknowledge|knowledge|recognize|memorize|0|acknowledge 承認
+vocab|2|It takes years of practice to ______ a new language.|acquire|require|inquire|admire|0|acquire 習得/獲得
+vocab|2|It took me a few weeks to ______ to the cold weather.|adjust|adopt|adapt|admit|0|adjust 調整/適應
+vocab|2|I truly ______ doctors who work tirelessly to save lives.|admire|admit|advise|advertise|0|admire 欽佩
+vocab|2|She finally ______ breaking the expensive glass vase.|admitted|committed|permitted|submitted|0|admit 承認
+vocab|2|The school decided to ______ a new teaching method.|adopt|adapt|adept|adore|0|adopt 採用
+vocab|2|Modern technology continues to ______ at a rapid pace.|advance|advertise|advocate|adventure|0|advance 進步/前進
+vocab|2|We cannot ______ to buy a new apartment in Taipei right now.|afford|effort|offer|affect|0|afford 負擔得起
+vocab|2|He is an ______ driver who often honks at other cars.|aggressive|progressive|impressive|depressive|0|aggressive 具攻擊性的
+vocab|2|Drivers must stay ______ on the road during rainy nights.|alert|alter|alien|alike|0|alert 警覺的
+vocab|2|Solar power is a clean ______ to burning coal.|alternative|initiative|perspective|objective|0|alternative 替代方案
+vocab|2|Although he is an ______ photographer, his photos look professional.|amateur|mature|nature|feature|0|amateur 業餘的
+vocab|2|Scientists ______ the data to find the cause of the disease.|analyze|apologize|emphasize|organize|0|analyze 分析
+vocab|2|Archaeologists discovered an ______ temple buried under the sand.|ancient|patient|efficient|sufficient|0|ancient 古老的
+vocab|2|The company holds an ______ meeting every December.|annual|manual|mutual|usual|0|annual 每年的
+vocab|2|She felt ______ while waiting for her exam results.|anxious|cautious|precious|conscious|0|anxious 焦慮的
+vocab|2|It soon became ______ that the team was going to lose.|apparent|transparent|different|tolerant|0|apparent 明顯的
+vocab|2|The heavy snowstorm forced the climbers to ______ their plan.|alter|utter|enter|order|0|alter 改變
+vocab|3|Many countries decided to ______ the death penalty.|abolish|polish|publish|punish|0|abolish 廢除
+vocab|3|The bus came to an ______ stop, nearly throwing passengers down.|abrupt|corrupt|bankrupt|erupt|0|abrupt 突然的
+vocab|3|Love and freedom are ______ concepts that cannot be touched.|abstract|attract|contract|extract|0|abstract 抽象的
+vocab|3|It is ______ to believe that the Earth is flat.|absurd|obscure|secure|endure|0|absurd 荒謬的
+vocab|3|Taiwan has ______ rainfall throughout the year.|abundant|redundant|reluctant|ignorant|0|abundant 豐富的
+vocab|3|The movie received critical ______ from reviewers worldwide.|acclaim|claim|exclaim|proclaim|0|acclaim 讚譽
+vocab|3|He was rushed to the hospital with ______ abdominal pain.|acute|cute|mute|route|0|acute 劇烈的/急性的
+vocab|3|All staff members must ______ strictly to the safety rules.|adhere|cohere|interfere|persevere|0|adhere 遵守/黏附
+vocab|3|The medicine may cause ______ side effects such as dizziness.|adverse|diverse|reverse|universe|0|adverse 不利的/負面的
+vocab|3|Environmentalists ______ for stricter laws against ocean pollution.|advocate|allocate|dedicate|indicate|0|advocate 提倡/擁護
+vocab|3|The building was designed for both function and ______ appeal.|aesthetic|athletic|pathetic|synthetic|0|aesthetic 美學的
+vocab|3|They live in an ______ neighborhood with huge mansions.|affluent|fluent|frequent|consequent|0|affluent 富裕的
+vocab|3|The ______ score of the three tests will determine your grade.|aggregate|segregate|congregate|delegate|0|aggregate 總計的
+vocab|3|Monkeys are extremely ______ climbers in the jungle.|agile|fragile|hostile|fertile|0|agile 敏捷的
+vocab|3|His rude comments tended to ______ his closest friends.|alienate|alleviate|accelerate|accumulate|0|alienate 疏遠
+vocab|3|The government will ______ more funds to public healthcare.|allocate|advocate|locate|relocate|0|allocate 分配/撥出
+vocab|3|In his speech, the mayor ______ to the city's financial troubles.|alluded|deluded|eluded|included|0|allude 暗指/提及
+vocab|3|She remained ______ during the party, talking to nobody.|aloof|proof|roof|spoof|0|aloof 冷漠疏離的
+vocab|3|Donating anonymously to charity is an act of pure ______ .|altruism|criticism|optimism|pessimism|0|altruism 利他主義
+vocab|3|The new policy aims to ______ living conditions in poor areas.|ameliorate|deteriorate|evaporate|exaggerate|0|ameliorate 改善
+vocab|3|The manager was ______ to our suggestions for flexible hours.|amenable|miserable|portable|vulnerable|0|amenable 願意接受的
+vocab|3|The teacher used an ______ comparing the brain to a computer.|analogy|apology|biology|geology|0|analogy 類比
+vocab|3|There is deep ______ between the two rival gangs.|animosity|generosity|curiosity|diversity|0|animosity 敵意/仇恨
+vocab|3|Snow in July is a rare weather ______ in this region.|anomaly|autonomy|astronomy|economy|0|anomaly 異常現象
+vocab|3|The dictator suppressed all political ______ in the country.|dissent|descent|consent|resent|0|dissent 異議
+vocab|4|The sudden drop in temperature in summer was a climate ______ .|aberration|abbreviation|acceleration|accumulation|0|aberration 異常/反常
+vocab|4|Quantum physics is too ______ for most laypeople to understand.|abstruse|obtuse|profuse|recluse|0|abstruse 深奧難懂的
+vocab|4|Reluctantly, the board had to ______ to the union's demands.|acquiesce|coalesce|effervesce|convalesce|0|acquiesce 默許/勉強同意
+vocab|4|The divorce turned into an ______ legal battle over money.|acrimonious|harmonious|ceremonious|parsimonious|0|acrimonious 尖酸刻薄/激烈的
+vocab|4|She was ______ that she would not change her decision.|adamant|dormant|rampant|stagnant|0|adamant 堅決不動搖的
+vocab|4|He accepted the invitation with ______ and excitement.|alacrity|clarity|charity|parity|0|alacrity 欣然/敏捷
+vocab|4|A smartphone in a medieval movie would be an obvious ______ .|anachronism|mechanism|organism|criticism|0|anachronism 時代錯誤
+vocab|4|The company provides ______ services such as free parking.|ancillary|artillery|capillary|distillery|0|ancillary 輔助的
+vocab|4|He felt a strong ______ toward anyone who mistreated animals.|antipathy|sympathy|empathy|apathy|0|antipathy 反感/厭惡
+vocab|4|Voter ______ led to the lowest election turnout in history.|apathy|empathy|sympathy|telepathy|0|apathy 冷漠/無動於衷
+vocab|4|The manager offered a discount to ______ the angry customer.|appease|apprise|appraise|arouse|0|appease 安撫/平息
+vocab|1|We need to ______ a solution to this traffic problem.|seek|peek|leak|cheek|0|seek 尋找
+vocab|1|The teacher praised her for her ______ improvement in English.|steady|greedy|cloudy|muddy|0|steady 穩定的
+vocab|1|Please ______ the instructions carefully before starting the test.|observe|deserve|preserve|reserve|0|observe 遵守/觀察
+vocab|1|The heavy rain forced us to ______ the outdoor concert.|postpone|propose|suppose|expose|0|postpone 延期
+vocab|1|He was ______ from the competition for breaking the rules.|excluded|included|concluded|secluded|0|exclude 排除/取消資格
+vocab|1|Regular reading helps ______ your vocabulary and writing skills.|enrich|enlarge|enforce|engage|0|enrich 豐富
+vocab|1|The bridge was built to ______ the two sides of the river.|connect|collect|correct|protect|0|connect 連接
+vocab|1|She felt a deep sense of ______ after winning the championship.|pride|bride|tide|slide|0|pride 驕傲/自豪
+vocab|1|You should ______ your time wisely during the final exam.|manage|damage|package|bandaged|0|manage 管理/運用
+vocab|1|The company is looking for someone with ______ experience.|relevant|elegant|ignorant|distant|0|relevant 相關的
+vocab|1|His humorous stories always ______ the whole class.|amuse|abuse|accuse|refuse|0|amuse 逗樂
+vocab|1|The government should ______ more money in public education.|invest|invent|invite|involve|0|invest 投資
+vocab|2|The witness's story did not ______ with the police report.|coincide|collide|confide|reside|0|coincide 一致/巧合
+vocab|2|Severe weather conditions can ______ air travel worldwide.|disrupt|corrupt|erupt|abrupt|0|disrupt 中斷/擾亂
+vocab|2|She has a ______ for learning foreign languages quickly.|knack|stack|track|crack|0|knack 訣竅/天賦
+vocab|2|The manager decided to ______ the responsibility to his assistant.|delegate|relegate|segregate|congregate|0|delegate 委派
+vocab|2|His rude behavior at the party was completely ______.|unacceptable|unbelievable|unpredictable|unforgettable|0|unacceptable 不可接受的
+vocab|2|The medicine will ______ the pain within thirty minutes.|relieve|believe|achieve|deceive|0|relieve 減輕/緩解
+vocab|2|We must ______ the spread of fake news on social media.|curb|blur|spur|stir|0|curb 抑制/控制
+vocab|2|The charity relies on ______ donations from the public.|voluntary|compulsory|temporary|legendary|0|voluntary 自願的
+vocab|2|The detective found a crucial ______ at the crime scene.|clue|glue|blue|true|0|clue 線索
+vocab|2|Her constant hard work finally ______ in a promotion.|culminated|eliminated|illuminated|nominated|0|culminate 最終達到
+vocab|2|The two countries signed a treaty to ______ peace.|foster|boaster|coaster|poster|0|foster 促進/培養
+vocab|2|He gave a ______ nod to show that he agreed with the plan.|subtle|brittle|shuttle|kettle|0|subtle 微妙的
+vocab|2|The storm caused ______ damage to the coastal villages.|extensive|expensive|defensive|intensive|0|extensive 廣泛的
+vocab|3|The professor's explanation helped ______ the complex theory.|elucidate|eradicate|evaporate|exaggerate|0|elucidate 闡明
+vocab|3|Her ______ remarks during the debate won over the audience.|eloquent|arrogant|ignorant|reluctant|0|eloquent 雄辯的
+vocab|3|The company's profits have ______ over the past three quarters.|fluctuated|evaluated|graduated|evacuated|0|fluctuate 波動
+vocab|3|He made a ______ attempt to hide his disappointment.|feeble|fertile|fragile|futile|0|feeble 微弱無力的
+vocab|3|The new law will ______ strict penalties on drunk drivers.|impose|compose|dispose|propose|0|impose 強制實施
+vocab|3|The desert landscape seemed completely ______ of any life.|devoid|avoid|android|tabloid|0|devoid 缺乏的
+vocab|3|She remained ______ despite the chaotic situation around her.|composed|exposed|opposed|supposed|0|composed 鎮定的
+vocab|3|The evidence against the suspect was purely ______.|circumstantial|confidential|controversial|consequential|0|circumstantial 間接的/情況的
+vocab|3|His ______ nature made him unwilling to try new things.|timid|vivid|rigid|humid|0|timid 膽怯的
+vocab|3|The artist's work is a ______ blend of traditional and modern styles.|harmonious|monotonous|poisonous|enormous|0|harmonious 和諧的
+vocab|3|The treaty was ______ by both parliaments last month.|ratified|mortified|fortified|certified|0|ratify 批准/認可
+vocab|3|Lack of proper nutrition can ______ a child's physical growth.|stunt|blunt|grunt|hunt|0|stunt 阻礙成長
+vocab|4|The speaker's ______ tone alienated many potential supporters.|bombastic|fantastic|sarcastic|elastic|0|bombastic 浮誇的
+vocab|4|She possessed an ______ sense of style that everyone admired.|impeccable|implacable|improbable|impenetrable|0|impeccable 無可挑剔的
+vocab|4|The general's ______ tactics led to a decisive victory.|astute|acute|minute|dilute|0|astute 精明的
+vocab|4|His ______ behavior at the funeral shocked all the mourners.|flippant|flagrant|fragrant|vagrant|0|flippant 輕率無禮的
+vocab|4|The author's latest novel is a ______ critique of modern society.|trenchant|dormant|rampant|stagnant|0|trenchant 銳利深刻的
+vocab|4|The negotiation reached an ______ when neither side would yield.|impasse|compass|trespass|bypass|0|impasse 僵局
+vocab|4|He is known for his ______ wit and quick comebacks.|mordant|dormant|verdant|discordant|0|mordant 尖刻諷刺的
+vocab|4|The scandal threatened to ______ the politician's reputation.|tarnish|garnish|varnish|banish|0|tarnish 玷汙
+vocab|4|Her ______ memory allowed her to recall every detail of the event.|tenacious|voracious|fallacious|spacious|0|tenacious 頑強/記性極好的
+vocab|4|The king was known for his ______ rule and cruelty.|tyrannical|botanical|mechanical|whimsical|0|tyrannical 暴虐的
+vocab|4|The scientist's discovery was hailed as a ______ breakthrough.|seminal|terminal|nominal|criminal|0|seminal 開創性的
+vocab|4|He lived a ______ life, traveling from city to city without a home.|peripatetic|pathetic|synthetic|aesthetic|0|peripatetic 漂泊的
+vocab|4|The committee decided to ______ the outdated regulations.|rescind|descend|transcend|ascend|0|rescind 廢除/撤銷
+grammar|1|The weather in Taipei is much wetter than ______ in Kaohsiung.|that|those|it|one|0|比較級用that代替單數名詞weather
+grammar|1|She has been practicing the piano ______ two hours.|for|since|during|while|0|for+一段時間配現在完成進行式
+grammar|1|The cookies ______ by my grandmother taste delicious.|baked|baking|were baked|to bake|0|過去分詞baked作後位修飾
+grammar|1|Neither you nor he ______ responsible for this mistake.|is|are|am|be|0|Neither...nor隨最近主詞he
+grammar|1|If I ______ enough money, I would buy that sports car.|had|have|will have|having|0|與現在事實相反假設用過去式had
+grammar|1|Please turn off the lights before ______ the classroom.|leaving|to leave|leave|left|0|before當介系詞後接V-ing
+grammar|1|This is the very book ______ I have been looking for.|that|which|who|where|0|先行詞有the very修飾關代用that
+grammar|1|He failed the exam because of ______ too much time gaming.|spending|spend|to spend|spent|0|because of為介系詞後接V-ing
+grammar|1|My parents don't allow me ______ out past midnight.|to stay|stay|staying|stayed|0|allow sb. to V允許某人做某事
+grammar|1|Look at those dark clouds! It ______ soon.|is going to rain|rains|rained|has rained|0|有明顯跡象的未來用be going to
+grammar|1|The boy ______ a red cap is my younger brother.|wearing|worn|wears|is wearing|0|主動分詞wearing作後位修飾
+grammar|1|You had better ______ a coat; it's freezing outside.|put on|to put on|putting on|puts on|0|had better+原形V最好做某事
+grammar|2|The reason ______ he resigned remains a mystery to us.|why|which|what|where|0|先行詞reason後子句完整用關係副詞why
+grammar|2|______ what to do next, she turned to her teacher for advice.|Not knowing|Not known|Don't know|Not to know|0|否定分詞構句Not+V-ing放句首
+grammar|2|He lay on the grass with his arms ______ behind his head.|folded|folding|to fold|fold|0|with+O+p.p.表雙手被交叉枕在頭後
+grammar|2|I regret ______ you that your application was rejected.|to inform|informing|inform|informed|0|regret to V遺憾地要通知
+grammar|2|She was the first woman ______ across the English Channel.|to swim|swimming|swam|swum|0|序數the first後接不定詞to V
+grammar|2|______ hard you try, you cannot please everyone.|No matter how|No matter what|However much|Whatever|0|No matter how+Adj/Adv+S+V
+grammar|2|The house ______ roof was damaged in the typhoon is being repaired.|whose|which|that|where|0|所有格關代whose+名詞roof
+grammar|2|He avoids ______ eye contact whenever he tells a lie.|making|to make|make|made|0|avoid+V-ing避免做某事
+grammar|2|It is no use ______ to persuade him; he is too stubborn.|trying|to try|try|tried|0|It is no use+V-ing
+grammar|2|______ by the loud noise, the baby burst into tears.|Frightened|Frightening|To frighten|Frighten|0|嬰兒是被嚇到，用過去分詞Frightened
+grammar|2|She insisted on ______ the bill herself.|paying|to pay|pay|paid|0|insist on+V-ing堅持做某事
+grammar|2|We will have finished the project by the time the boss ______.|returns|will return|returned|returning|0|by the time+現在簡單式代未來
+grammar|2|I found it difficult ______ asleep in a noisy hotel.|to fall|falling|fall|fell|0|find it+Adj+to V虛受詞句型
+grammar|3|______ I known you were in town, I would have invited you to dinner.|Had|Have|Should|Were|0|與過去事實相反假設倒裝Had+S+p.p.
+grammar|3|Tired ______ he was, he stayed up late to finish the report.|as|although|despite|even|0|讓步倒裝Adj+as+S+V
+grammar|3|The doctor recommended that she ______ more vegetables.|eat|eats|ate|eating|0|recommend+that+S+(should)+原形V
+grammar|3|No sooner had the bell rung ______ the students rushed out.|than|when|then|after|0|No sooner...than一...就...
+grammar|3|What surprised us most was ______ he won the race effortlessly.|that|what|which|whether|0|引導主詞補語名詞子句且句意完整用that
+grammar|3|______ to the severe drought, water rationing will begin next week.|Owing|Due|Because|According|0|Owing to=Because of由於(注意選項結構)
+grammar|3|She treats the orphan as if he ______ her own son.|were|is|was|has been|0|as if與事實相反假設用were
+grammar|3|______ with last year, our sales have increased by 20 percent.|Compared|Comparing|To compare|Compare|0|Compared with與...相比(固定分詞)
+grammar|3|He is not so much a scholar ______ a brilliant politician.|as|than|like|but|0|not so much A as B與其說是A不如說是B
+grammar|3|There is no denying ______ technology has changed our lives.|that|which|what|whether|0|There is no denying that無可否認
+vocab|1|The teacher asked us to ______ the main idea of the article.|summarize|memorize|apologize|criticize|0|summarize 總結
+vocab|1|Regular exercise can ______ your risk of heart disease.|reduce|produce|induce|seduce|0|reduce 降低
+vocab|1|He felt ______ after running ten kilometers without stopping.|exhausted|excited|expected|expanded|0|exhausted 精疲力竭的
+vocab|1|Please ______ your name and phone number on the form.|indicate|dedicate|educate|medicate|0|indicate 註明/指出
+vocab|1|The little girl was ______ to speak in front of strangers.|reluctant|pleasant|brilliant|tolerant|0|reluctant 不情願的
+vocab|1|We should ______ plastic bags to protect the environment.|recycle|cycle|bicycle|circle|0|recycle 回收
+vocab|1|His sudden resignation came as a great ______ to everyone.|shock|stock|block|flock|0|shock 震驚
+vocab|1|The library provides a quiet ______ for students to study.|atmosphere|hemisphere|sphere|interfere|0|atmosphere 氣氛/環境
+vocab|1|You must ______ permission before entering the laboratory.|obtain|contain|maintain|sustain|0|obtain 獲得
+vocab|1|The medicine had an ______ effect on his headache.|immediate|intermediate|moderate|desperate|0|immediate 立即的
+vocab|1|She has a ______ memory and never forgets a face.|remarkable|portable|durable|edible|0|remarkable 非凡的
+vocab|1|The flight was ______ for two hours due to heavy fog.|delayed|relayed|replayed|displayed|0|delay 延誤
+vocab|2|The witness gave an ______ description of the bank robber.|accurate|adequate|delicate|intricate|0|accurate 精確的
+vocab|2|It takes time to ______ to a new school environment.|adapt|adopt|adept|adult|0|adapt 適應
+vocab|2|The company decided to ______ the project due to lack of funds.|abandon|abundant|absorb|abroad|0|abandon 放棄
+vocab|2|Her speech ______ many young people to pursue their dreams.|inspired|expired|perspired|conspired|0|inspire 激勵
+vocab|2|The rescue team worked tirelessly to ______ the trapped miners.|locate|allocate|relocate|dislocate|0|locate 找出位置
+vocab|2|Drinking enough water is ______ for maintaining good health.|essential|potential|influential|confidential|0|essential 不可或缺的
+vocab|2|He tried to ______ his nervousness before the job interview.|conceal|reveal|appeal|repeal|0|conceal 隱藏
+vocab|2|The two companies reached a ______ agreement after long talks.|mutual|casual|visual|manual|0|mutual 共同的/相互的
+vocab|2|The severe drought caused a serious ______ of drinking water.|shortage|storage|coverage|leverage|0|shortage 短缺
+vocab|2|She handled the customer's complaint with great ______ and patience.|tact|pact|fact|impact|0|tact 機智/圓滑
+vocab|2|The museum displays many ______ artifacts from ancient Egypt.|authentic|synthetic|pathetic|aesthetic|0|authentic 真品的
+vocab|2|Excessive screen time may ______ your sleep quality.|impair|repair|despair|prepare|0|impair 損害
+vocab|2|The new policy aims to ______ economic growth in rural areas.|stimulate|simulate|formulate|accumulate|0|stimulate 刺激/促進
+vocab|3|The politician's speech was full of ______ statements.|ambiguous|unanimous|anonymous|autonomous|0|ambiguous 模稜兩可的
+vocab|3|Lack of sleep can ______ your ability to concentrate.|diminish|distinguish|extinguish|astonish|0|diminish 削弱/減少
+vocab|3|The suspect had a ______ alibi that proved his innocence.|credible|edible|audible|eligible|0|credible 可信的
+vocab|3|Climate change poses an ______ threat to coastal cities.|imminent|eminent|prominent|permanent|0|imminent 迫在眉睫的
+vocab|3|The scientist's findings were ______ by subsequent experiments.|corroborated|collaborated|elaborated|evaporated|0|corroborate 證實
+vocab|3|His ______ attitude towards safety rules led to the accident.|negligent|diligent|intelligent|indulgent|0|negligent 疏忽的
+vocab|3|The government imposed ______ measures to control inflation.|stringent|contingent|astringent|tangent|0|stringent 嚴厲的
+vocab|3|She showed ______ courage when confronting the armed thief.|audacious|fallacious|tenacious|spacious|0|audacious 大膽的
+vocab|3|The new software is ______ with both Windows and Mac systems.|compatible|comparable|capable|culpable|0|compatible 相容的
+vocab|3|The CEO was forced to resign amid ______ of financial fraud.|allegations|delegations|obligations|irrigations|0|allegation 指控
+vocab|3|His witty remarks helped ______ the tension in the meeting room.|diffuse|confuse|infuse|refuse|0|diffuse 緩和/散播
+vocab|3|The ancient manuscript was written in an ______ language.|obscure|secure|mature|endure|0|obscure 晦澀難懂的
+vocab|4|The critic's ______ review ruined the young playwright's career.|scathing|soothing|loathing|bathing|0|scathing 嚴厲苛刻的
+vocab|4|Her ______ lifestyle left her deeply in debt within a year.|profligate|propagate|surrogate|aggregate|0|profligate 揮霍無度的
+vocab|4|The diplomat was praised for his ______ handling of the crisis.|adroit|devoid|android|thyroid|0|adroit 熟練機敏的
+vocab|4|The witness's ______ account contradicted the physical evidence.|mendacious|audacious|voracious|tenacious|0|mendacious 虛假的
+vocab|4|The professor's lecture was so ______ that half the class fell asleep.|soporific|terrific|horrific|specific|0|soporific 催眠的
+vocab|4|Despite his wealth, he lived a remarkably ______ life.|ascetic|aesthetic|synthetic|pathetic|0|ascetic 苦行禁慾的
+vocab|4|The rebel leader remained ______ even when facing execution.|recalcitrant|exuberant|itinerant|tolerant|0|recalcitrant 頑強不屈的
+vocab|4|The lawyer's ______ argument exposed the flaw in the prosecution's case.|trenchant|merchant|penchant|enchant|0|trenchant 一針見血的
+vocab|4|His ______ praise of the boss annoyed all his coworkers.|obsequious|ubiquitous|iniquitous|ambiguous|0|obsequious 逢迎拍馬的
+vocab|4|The treaty proved to be a ______ peace that lasted only weeks.|chimerical|numerical|hysterical|clerical|0|chimerical 虛幻不實的
+vocab|4|The disease is ______ to certain tropical regions.|indigenous|ingenious|ingenuous|ambiguous|0|indigenous 原生的/本土的
+vocab|4|The journalist uncovered a ______ plot to overthrow the government.|clandestine|intestine|pristine|destine|0|clandestine 秘密的
+vocab|4|Her ______ remarks offended everyone at the dinner table.|acerbic|aerobic|anaerobic|microbic|0|acerbic 尖酸刻薄的
+grammar|1|Neither my parents nor my sister ______ to Japan before.|has been|have been|was|were|0|Neither...nor隨最近主詞sister
+grammar|1|The letter ______ in French was difficult to translate.|written|writing|wrote|was written|0|過去分詞written作後位修飾
+grammar|1|If you ______ harder, you will pass the entrance exam.|study|studied|will study|studying|0|條件句現在簡單式代替未來式
+grammar|1|She enjoys ______ classical music in her free time.|listening to|to listen to|listen to|listened to|0|enjoy+V-ing
+grammar|1|This is the most exciting movie ______ I have ever seen.|that|which|who|where|0|最高級修飾先行詞關代用that
+grammar|1|He stopped ______ a rest after walking for three hours.|to take|taking|take|took|0|stop to V停下來去做某事
+grammar|1|The population of Taipei is larger than ______ of Tainan.|that|those|it|one|0|比較級用that代替單數名詞population
+grammar|1|By next month, I ______ here for exactly ten years.|will have worked|worked|am working|have worked|0|By+未來時間用未來完成式
+grammar|1|She had her hair ______ at a famous salon yesterday.|cut|cutting|to cut|cuts|0|have+O+p.p.表頭髮被剪
+grammar|1|Not only the students but also the teacher ______ excited.|was|were|are|be|0|Not only...but also隨最近主詞
+grammar|1|I remember ______ the door before leaving the house.|locking|to lock|lock|locked|0|remember+V-ing記得做過某事
+grammar|1|Hardly anyone showed up at the party, ______?|did they|didn't they|did he|didn't he|0|Hardly為否定，附加問句用肯定they
+grammar|2|The hotel ______ we stayed during our vacation was luxurious.|where|which|that|what|0|地點後子句完整用關係副詞where
+grammar|2|______ his homework, Tom went out to play basketball.|Having finished|Finished|Finish|To finish|0|完成式分詞構句表動作先完成
+grammar|2|She stood by the window with tears ______ down her cheeks.|rolling|rolled|to roll|roll|0|with+O+V-ing表眼淚主動滑落
+grammar|2|I would rather ______ at home than go out in the rain.|stay|to stay|staying|stayed|0|would rather+原形V+than+原形V
+grammar|2|It is no good ______ over what cannot be changed.|worrying|to worry|worry|worried|0|It is no good+V-ing
+grammar|2|The man ______ to our principal is a famous scientist.|talking|talked|talks|is talking|0|主動分詞talking作後位修飾
+grammar|2|______ the heavy traffic, we arrived at the airport on time.|Despite|Although|Even though|Because|0|Despite為介系詞後接名詞片語
+grammar|2|He is said ______ a fortune in the stock market.|to have made|making|made|make|0|be said to have p.p.據說已經
+grammar|2|We couldn't help ______ when we heard the funny joke.|laughing|to laugh|laugh|laughed|0|can't help+V-ing忍不住
+grammar|2|Please remind me ______ the electricity bill tomorrow.|to pay|paying|pay|paid|0|remind sb. to V提醒某人去做
+grammar|2|She is the woman ______ son won the gold medal.|whose|who|whom|which|0|所有格關代whose+名詞
+grammar|2|The car needs ______ before we go on a long road trip.|washing|to wash|wash|washed|0|need+V-ing表被動(=to be washed)
+grammar|2|______ in 1905, the museum houses thousands of paintings.|Founded|Founding|Having founded|To found|0|博物館是被建立，用過去分詞Founded
+grammar|3|______ rich he may be, he cannot buy true happiness.|However|Whatever|Whichever|Although|0|However+Adj+S+V無論多麼
+grammar|3|What matters most is not what you say but ______ you do.|what|which|that|how|0|平行結構not what...but what
+grammar|3|______ I in your shoes, I would accept the job offer.|Were|Was|Had|Should|0|與現在事實相反假設倒裝Were I
+grammar|3|Scarcely had she fallen asleep ______ the phone rang.|when|than|then|after|0|Scarcely...when一...就...
+grammar|3|The judge ordered that the prisoner ______ released immediately.|be|is|was|were|0|order+that+S+(should)+原形V
+grammar|3|______ a child, he showed great interest in astronomy.|When|While|As|Being|2|As a child身為小孩時
+grammar|3|All ______ glitters is not gold.|that|which|what|who|0|先行詞為All時關代用that
+grammar|3|So fast ______ that nobody could catch up with him.|did he run|he ran|ran he|he did run|0|So+Adv置首須助動詞+主詞倒裝
+grammar|3|______ from his accent, he must be from southern Taiwan.|Judging|Judged|To judge|Judge|0|Judging from為獨立分詞構句固定用法vocab|1|It is difficult to ______ the language barrier.|overcome|overlook|overtake|overdo|0|overcome 克服
 vocab|1|She is very ______ and studies 5 hours a day.|diligent|lazy|casual|random|0|diligent 勤勉的
 vocab|1|He tried to ______ his friend to join the club.|persuade|invade|evade|parade|0|persuade 說服
 vocab|1|The police were ______ of the man in the dark coat.|suspicious|delicious|precious|conscious|0|suspicious 懷疑的
@@ -502,12 +743,26 @@ grammar|4|He failed the exam, ______ was not surprising.|which|that|what|it|0|wh
 grammar|4|The manager urged that everyone ______ more productive.|be|is|was|were|0|urge + that + (should) V
 grammar|4|______ an emergency arise, please break the glass.|Should|If|Were|Had|0|Should 倒裝表萬一
 grammar|4|I wish I ______ the answer to your question right now.|knew|know|had known|will know|0|wish + 過去式
-// === 擴充題庫貼上區 ===
 `;
 
-// --- 數據結構 ---
+let Q_POOL = [];
+function parseQuestions() {
+    Q_POOL = Q_RAW.trim().split('\n').filter(l => l && !l.startsWith('//')).map(line => {
+        let p = line.split('|');
+        return { route: p[0], diff: parseInt(p[1]), q: p[2], opts: [p[3], p[4], p[5], p[6]], ans: parseInt(p[7]), exp: p[8] };
+    });
+}
+function getQuestion(route, level) {
+    let diff = level <= 25 ? 1 : level <= 50 ? 2 : level <= 75 ? 3 : 4;
+    let pool = Q_POOL.filter(q => q.route === route && q.diff === diff);
+    if(pool.length === 0) pool = Q_POOL; 
+    return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// =========================================
+// 2. 怪物與塔的數據庫
+// =========================================
 const MONSTER_DATA = [
-    // 迅捷系 (Fast)
     { id: 'M01', name: '尼斯湖水怪', type: 'fast', desc: '遠程吐出高壓水柱', hpBase: 12, spdBase: 35 },
     { id: 'M02', name: '九尾妖狐', type: 'fast', desc: '具備短距離殘影衝刺', hpBase: 15, spdBase: 40 },
     { id: 'M03', name: '天蛾人', type: 'fast', desc: '空中飛行單位', hpBase: 10, spdBase: 45 },
@@ -522,7 +777,6 @@ const MONSTER_DATA = [
     { id: 'M12', name: '喪屍犬', type: 'fast', desc: '成群結隊出現', hpBase: 8, spdBase: 42 },
     { id: 'M13', name: '食屍鬼', type: 'fast', desc: '低血量狂化', hpBase: 15, spdBase: 38 },
     { id: 'M14', name: '半魚人', type: 'fast', desc: '滑行避開攻擊', hpBase: 14, spdBase: 34 },
-    // 重裝系 (Heavy)
     { id: 'M15', name: '牛頭人', type: 'heavy', desc: '重裝護盾與震地波', hpBase: 55, spdBase: 15 },
     { id: 'M16', name: '獨眼巨人', type: 'heavy', desc: '投擲巨石暈眩砲塔', hpBase: 60, spdBase: 12 },
     { id: 'M17', name: '雪男', type: 'heavy', desc: '厚實毛皮減免傷害', hpBase: 50, spdBase: 16 },
@@ -537,7 +791,6 @@ const MONSTER_DATA = [
     { id: 'M26', name: '泥人', type: 'heavy', desc: '分裂成兩個小泥人', hpBase: 60, spdBase: 12 },
     { id: 'M27', name: '河童', type: 'heavy', desc: '水域防禦翻倍', hpBase: 45, spdBase: 16 },
     { id: 'M28', name: '吸血鬼', type: 'heavy', desc: '化身蝙蝠閃避', hpBase: 40, spdBase: 17 },
-    // 魔王系 (Boss)
     { id: 'M29', name: '海怪克拉肯', type: 'boss', desc: '發射墨汁遮擋視線', hpBase: 160, spdBase: 9 },
     { id: 'M30', name: '八岐大蛇', type: 'boss', desc: '八個頭顱獨立攻擊', hpBase: 200, spdBase: 8 },
     { id: 'M31', name: '貝希摩斯', type: 'boss', desc: '絕對防禦力', hpBase: 250, spdBase: 6 },
@@ -554,7 +807,6 @@ const MONSTER_DATA = [
     { id: 'M42', name: '提豐', type: 'boss', desc: '萬妖之王全屏毀滅', hpBase: 350, spdBase: 7 }
 ];
 
-// 生成 30 個塔資料
 const TOWER_DATA = [];
 const skillTypes = ['none', 'slow', 'burn', 'knockback', 'chain', 'scatter', 'laser', 'stun', 'blackhole', 'gold_crit', 'super_laser', 'ultimate'];
 let t_id = 1;
@@ -563,12 +815,14 @@ let t_id = 1;
     for(let i=0; i<count; i++) {
         let name = `${rarity}-型號 ${t_id}`;
         let skill = skillTypes[t_id % skillTypes.length];
-        TOWER_DATA.push({ id: `P${t_id<10?'0'+t_id:t_id}`, name, rarity, skill, dmg: 10 + t_id*2, fireRate: 1 - (t_id%5)*0.1 });
+        TOWER_DATA.push({ id: `P${t_id<10?'0'+t_id:t_id}`, name, rarity, skill, dmg: 10 + t_id*2, fireRate: 1 - (t_id%5)*0.1, range: 600 });
         t_id++;
     }
 });
 
-// --- 全域狀態與存檔 ---
+// =========================================
+// 3. 系統存檔與音效
+// =========================================
 let Save = {
     ver: 1, diam: 500, sound: true,
     progress: { vocab: 1, grammar: 1 },
@@ -581,27 +835,21 @@ function loadSave() {
     updateUI();
 }
 function saveGame() { localStorage.setItem('mythTD_save', JSON.stringify(Save)); }
-function resetSave() {
-    localStorage.removeItem('mythTD_save');
-    location.reload();
-}
+function resetSave() { localStorage.removeItem('mythTD_save'); location.reload(); }
 function addDiamonds(amt) { Save.diam += amt; saveGame(); updateUI(); }
 function updateUI() {
     document.getElementById('diamond-count').innerText = Save.diam;
     document.getElementById('vocab-progress').innerText = `進度：第 ${Save.progress.vocab} / 100 關`;
     document.getElementById('grammar-progress').innerText = `進度：第 ${Save.progress.grammar} / 100 關`;
-    
     let ranks = ['列兵', '少尉', '上尉', '少校', '上校', '將軍', '元帥'];
     let totalLevels = Save.progress.vocab + Save.progress.grammar;
     let rankIdx = Math.min(Math.floor(totalLevels / 30), ranks.length - 1);
     document.getElementById('player-rank').innerText = ranks[rankIdx];
-    
     let eqT = TOWER_DATA.find(t => t.id === Save.eqTower);
     if(eqT) document.getElementById('hangar-tower-name').innerText = `${eqT.rarity} ${eqT.name} Lv.${Save.towers[eqT.id]}`;
     document.getElementById('monster-col-txt').innerText = `圖鑑 ${Save.unlockedMonsters.length}/42`;
 }
 
-// --- 音效系統 (Web Audio API) ---
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
 function initAudio() { if(!audioCtx) audioCtx = new AudioCtx(); }
@@ -613,7 +861,6 @@ function playSynth(type) {
     let gain = audioCtx.createGain();
     osc.connect(gain); gain.connect(audioCtx.destination);
     let now = audioCtx.currentTime;
-    
     if(type === 'shoot') {
         osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
         gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
@@ -623,8 +870,7 @@ function playSynth(type) {
         gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.2);
         osc.start(now); osc.stop(now + 0.2);
     } else if(type === 'correct') {
-        osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now); // C5
-        osc.frequency.setValueAtTime(659.25, now+0.1); // E5
+        osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now+0.1);
         gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0, now + 0.3);
         osc.start(now); osc.stop(now + 0.3);
     } else if(type === 'wrong') {
@@ -632,7 +878,6 @@ function playSynth(type) {
         gain.gain.setValueAtTime(0.4, now); gain.gain.linearRampToValueAtTime(0, now + 0.4);
         osc.start(now); osc.stop(now + 0.4);
     } else if(type === 'gacha_sr') {
-        // Arpeggio
         [440, 554, 659, 880].forEach((freq, i) => {
             let o = audioCtx.createOscillator(); let g = audioCtx.createGain();
             o.type = 'sine'; o.frequency.value = freq;
@@ -649,41 +894,192 @@ function playSynth(type) {
 }
 function vibrate(ms) { if(Save.sound && navigator.vibrate) navigator.vibrate(ms); }
 
-// --- 繪圖引擎共用 ---
+
+// =========================================
+// 4. 戰鬥核心系統與技能特效 (Projectile & Combat)
+// =========================================
+let visualEffects = []; // { type: 'laser', start, end, life, color, thickness }
+
+const EFFECTS = {
+    drawLightning: (ctx, start, end, color = '#F6E05E') => {
+        ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(start.x, start.y);
+        let dist = Math.hypot(end.x - start.x, end.y - start.y);
+        let steps = Math.floor(dist / 15);
+        let cx = start.x, cy = start.y;
+        for (let i = 1; i < steps; i++) {
+            let t = i / steps;
+            let nx = start.x + (end.x - start.x) * t + (Math.random() - 0.5) * 20;
+            let ny = start.y + (end.y - start.y) * t + (Math.random() - 0.5) * 20;
+            ctx.lineTo(nx, ny);
+            cx = nx; cy = ny;
+        }
+        ctx.lineTo(end.x, end.y); ctx.stroke();
+    },
+    drawLaser: (ctx, start, end, thickness, color) => {
+        ctx.strokeStyle = color; ctx.lineWidth = thickness; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.stroke();
+        ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = thickness * 0.4; ctx.stroke();
+    }
+};
+
+class Projectile {
+    constructor(x, y, target, type, damage, speed = 800) {
+        this.x = x; this.y = y; this.target = target;
+        this.type = type; this.damage = damage; this.speed = speed;
+        this.active = true;
+        this.angle = target ? Math.atan2(target.y - y, target.x - x) : 0;
+        this.homing = type.includes('homing') || type === 'ultimate';
+        if (this.type === 'blackhole') this.life = 1.5;
+    }
+    update(monsters, particles, dt) {
+        if (!this.active) return;
+        if (this.type === 'blackhole') {
+            this.life -= dt;
+            if (this.life <= 0) this.active = false;
+            monsters.forEach(m => {
+                let d = Math.hypot(m.x - this.x, m.y - this.y);
+                if (d < 120) { m.x += (this.x - m.x) * 0.05 + 1.5; m.y += (this.y - m.y) * 0.05; }
+            });
+            return;
+        }
+        if (this.homing && this.target && this.target.hp > 0) {
+            this.angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+        }
+        this.x += Math.cos(this.angle) * this.speed * dt;
+        this.y += Math.sin(this.angle) * this.speed * dt;
+        if (this.x < 0 || this.x > 1200 || this.y < 0 || this.y > 800) this.active = false;
+        if (this.target && Math.hypot(this.x - this.target.x, this.y - this.target.y) < 30) {
+            this.hit(this.target, monsters, particles);
+        }
+    }
+    hit(target, monsters, particles) {
+        this.active = false;
+        Combat.applyDamageAndEffects(target, this.damage, this.type, monsters, particles, {x: this.x, y: this.y});
+    }
+    draw(ctx) {
+        if (!this.active) return;
+        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+        if (this.type === 'blackhole') {
+            ctx.rotate(Date.now() * 0.01); ctx.fillStyle = '#000'; ctx.shadowBlur = 20; ctx.shadowColor = '#6B46C1';
+            ctx.beginPath(); ctx.arc(0, 0, 30 + Math.sin(Date.now()*0.01)*5, 0, Math.PI*2); ctx.fill();
+        } else if (this.type.includes('slow')) {
+            ctx.fillStyle = '#63B3ED'; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill();
+        } else if (this.type.includes('burn')) {
+            ctx.fillStyle = '#F56565'; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill();
+        } else if (this.type.includes('poison')) {
+            ctx.fillStyle = '#9F7AEA'; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill();
+        } else {
+            ctx.fillStyle = '#E2E8F0'; ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-5, 5); ctx.lineTo(-5, -5); ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
+const Combat = {
+    fire: (turret, monsters, projectiles, ctx) => {
+        let target = monsters.find(m => Math.hypot(m.x - turret.x, m.y - turret.y) < turret.range);
+        if (!target && !turret.type.includes('aura')) return;
+
+        if (turret.type === 'aura_slow') {
+            monsters.forEach(m => {
+                if (Math.hypot(m.x - turret.x, m.y - turret.y) < turret.range) m.addBuff('aura_slow', { speedMult: 0.75, duration: 10 });
+            });
+            return;
+        }
+
+        if (turret.type === 'laser' || turret.type === 'super_laser') {
+            let width = turret.type === 'super_laser' ? 1200 : 600;
+            let endX = turret.x + width;
+            visualEffects.push({ type: 'laser', start: {x: turret.x, y: turret.y}, end: {x: endX, y: turret.y}, thickness: turret.type === 'super_laser' ? 20 : 8, color: '#3182CE', life: 0.2 });
+            monsters.forEach(m => {
+                if (m.x > turret.x && m.x < endX && Math.abs(m.y - turret.y) < 30) {
+                    Combat.applyDamageAndEffects(m, turret.damage, turret.type, monsters, particles, {x: turret.x, y: turret.y});
+                }
+            });
+            return;
+        }
+
+        if (turret.type === 'timestop') {
+            monsters.forEach(m => m.addBuff('timestop', { duration: 90 }));
+            return;
+        }
+
+        if (turret.type.includes('scatter')) {
+            let count = turret.type === 'scatter_homing' ? 6 : 3;
+            for(let i=0; i<count; i++) {
+                let p = new Projectile(turret.x, turret.y, target, turret.type, turret.damage);
+                p.angle += (i - (count-1)/2) * 0.2;
+                projectiles.push(p);
+            }
+            return;
+        }
+
+        if (turret.type === 'ultimate') {
+            for(let i=0; i<4; i++) projectiles.push(new Projectile(turret.x, turret.y, target, 'ultimate', turret.damage));
+            return;
+        }
+
+        projectiles.push(new Projectile(turret.x, turret.y, target, turret.type, turret.damage));
+    },
+
+    applyDamageAndEffects: (target, damage, type, monsters, particles, pos) => {
+        target.hp -= damage;
+        spawnFloatingText(target.x, target.y-20, `-${Math.floor(damage)}`, '#fff');
+        playSynth('hit');
+
+        if (type === 'slow') { target.addBuff('ice', { speedMult: 0.5, duration: 180 }); target.tint = '#90CDF4'; }
+        
+        if (type === 'chain' || type === 'bounce_laser') {
+            let current = target;
+            monsters.filter(m => m !== target && Math.hypot(m.x - current.x, m.y - current.y) < 150)
+                    .slice(0, 3)
+                    .forEach(nextTarget => {
+                        nextTarget.hp -= damage * 0.8;
+                        visualEffects.push({ type: 'lightning', start: {x: current.x, y: current.y}, end: {x: nextTarget.x, y: nextTarget.y}, color: '#F6E05E', life: 0.2 });
+                        current = nextTarget;
+                    });
+        }
+
+        if (type === 'burn') { target.addBuff('burn', { dot: target.maxHp * 0.08 / 60, duration: 240 }); target.tint = '#FC8181'; }
+        if (type === 'poison') { target.addBuff('poison', { dot: target.maxHp * 0.08 / 60, duration: 240 }); target.tint = '#B794F4'; }
+        if (type === 'knockback') target.x = Math.max(0, target.x - 45);
+        if (type === 'stun') target.addBuff('stun', { duration: 60 });
+        if (type === 'ultimate' && pos) {
+            monsters.forEach(m => { if (Math.hypot(m.x - pos.x, m.y - pos.y) < 150) m.hp -= damage * 2; });
+        }
+    }
+};
+
+// =========================================
+// 5. 繪圖引擎 (含 42 種神話怪物向量繪圖)
+// =========================================
 function drawGlow(ctx, x, y, r, color, alpha=0.5) {
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
     ctx.fillStyle = color.replace(')', `, ${alpha})`).replace('rgb', 'rgba');
     ctx.fill();
 }
-// 塔繪製 (2.5D)
+
 function drawTower(ctx, towerObj, x, y, angle, scale=1) {
     ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
-    // 底座
     ctx.fillStyle = '#223';
     ctx.beginPath(); ctx.moveTo(-30, 20); ctx.lineTo(30, 20); ctx.lineTo(20, -10); ctx.lineTo(-20, -10); ctx.fill();
     ctx.strokeStyle = '#0ff'; ctx.lineWidth = 1; ctx.stroke();
     
-    // 稀有度光環
     let auraColors = { 'N': 'rgba(0,100,255,', 'R': 'rgba(150,0,255,', 'SR': 'rgba(255,200,0,', 'UR': 'rgba(255,0,255,' };
     let c = auraColors[towerObj.rarity] || auraColors['N'];
     drawGlow(ctx, 0, 10, 40, c+'1)', 0.2);
 
     ctx.rotate(angle);
-    // 砲管
     ctx.fillStyle = '#555';
-    let recoil = towerObj.cooldown > 0 ? -5 : 0; // 模擬後座力
+    let recoil = towerObj.cooldown > 0 ? -5 : 0;
     if(towerObj.rarity === 'N' || towerObj.rarity === 'R') {
         ctx.fillRect(0, -5, 35 + recoil, 10);
     } else {
-        ctx.fillRect(0, -10, 40 + recoil, 8);
-        ctx.fillRect(0, 2, 40 + recoil, 8);
+        ctx.fillRect(0, -10, 40 + recoil, 8); ctx.fillRect(0, 2, 40 + recoil, 8);
     }
-    // 機體中心
     ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2);
-    ctx.fillStyle = '#334'; ctx.fill();
-    ctx.strokeStyle = '#fff'; ctx.stroke();
+    ctx.fillStyle = '#334'; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.stroke();
     
-    // 砲口焰
     if(towerObj.cooldown > (1/towerObj.fireRate - 0.1)) {
         ctx.fillStyle = '#fa0';
         ctx.beginPath(); ctx.moveTo(40, -5); ctx.lineTo(55, 0); ctx.lineTo(40, 5); ctx.fill();
@@ -691,54 +1087,91 @@ function drawTower(ctx, towerObj, x, y, angle, scale=1) {
     ctx.restore();
 }
 
-// 怪物繪製 (42種特徵實作)
-function drawMonster(ctx, mType, x, y, scale, time) {
-    ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
-    
-    // 影子
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.beginPath(); ctx.ellipse(0, 20, 20, 8, 0, 0, Math.PI*2); ctx.fill();
+function drawMonster(ctx, def, x, y, anim, enrage) {
+    ctx.save();
+    ctx.translate(x, y);
 
-    // 呼吸/行走起伏
-    let bob = Math.sin(time * 5) * 3;
-    ctx.translate(0, bob);
-    
-    // 依據 ID 繪製特徵 (由於空間限制，示範幾種核心結構，其餘共用但改變顏色/角/翼)
-    let m = parseInt(mType.replace('M',''));
-    
-    if(m === 1 || m === 32) { // 蛇頸龍/海棲
-        ctx.fillStyle = m===1 ? '#2a8' : '#228';
-        ctx.beginPath(); ctx.moveTo(-20, 15); ctx.quadraticCurveTo(-10, -30, 10, -20); ctx.quadraticCurveTo(20, -10, 20, 15); ctx.fill(); // 身體
-        ctx.beginPath(); ctx.arc(10, -25, 6, 0, Math.PI*2); ctx.fill(); // 頭
-    } else if (m === 2) { // 九尾
-        ctx.fillStyle = '#fa2';
-        for(let i=0; i<9; i++) {
-            ctx.save();
-            ctx.rotate(-Math.PI/2 + (i-4)*0.2 + Math.sin(time*2+i)*0.1);
-            ctx.beginPath(); ctx.ellipse(0, 15, 4, 15, 0, 0, Math.PI*2); ctx.fill();
+    const id = def.id !== undefined ? def.id : 0;
+    const baseColor = def.color || '#4A5568';
+    const accentColor = enrage ? '#E53E3E' : '#D69E2E';
+    const enrageScale = enrage ? 1.1 : 1.0;
+    const breath = Math.sin(anim * Math.PI * 2);
+    const bounce = Math.abs(Math.sin(anim * Math.PI * 4)) * 8 * enrageScale;
+    const time = anim * Math.PI * 2;
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.beginPath(); ctx.ellipse(0, 10, 25 - bounce * 0.5, 8 - bounce * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    ctx.beginPath(); ctx.ellipse(0, 10, 35 - bounce * 0.5, 12 - bounce * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.translate(0, -bounce);
+    if (enrage) ctx.scale(1.05, 1.05);
+
+    const drawPath = (pts, fill, stroke, width = 2) => {
+        ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) {
+            if (pts[i].cp1) ctx.bezierCurveTo(pts[i].cp1.x, pts[i].cp1.y, pts[i].cp2.x, pts[i].cp2.y, pts[i].x, pts[i].y);
+            else if (pts[i].cx) ctx.quadraticCurveTo(pts[i].cx, pts[i].cy, pts[i].x, pts[i].y);
+            else ctx.lineTo(pts[i].x, pts[i].y);
+        }
+        ctx.closePath();
+        if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+        if (stroke) { ctx.lineWidth = width; ctx.strokeStyle = stroke; ctx.stroke(); }
+    };
+    const drawTentacle = (startX, startY, length, segments, phaseOffset, color) => {
+        let curX = startX, curY = startY; ctx.lineWidth = length / 5; ctx.strokeStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(curX, curY);
+        for (let i = 0; i < segments; i++) {
+            const segLen = length / segments;
+            const wave = Math.sin(time * 2 + phaseOffset + i * 0.5) * (i * 2);
+            curX += (i % 2 === 0 ? segLen : segLen * 0.5) * (startX < 0 ? -1 : 1) + wave * 0.1;
+            curY -= segLen * 0.8 - Math.abs(wave) * 0.5;
+            ctx.lineTo(curX, curY); ctx.lineWidth = Math.max(1, (length / 5) * (1 - i / segments)); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(curX, curY);
+        }
+    };
+    const drawFeatherWing = (side, flapAngle, color) => {
+        ctx.save(); const dir = side === 'left' ? -1 : 1; ctx.scale(dir, 1); ctx.rotate(flapAngle);
+        drawPath([{x: 0, y: 0}, {x: 20, y: -30, cx: 10, cy: -20}, {x: 60, y: -40, cx: 40, cy: -45}, {x: 50, y: -10, cx: 65, cy: -25}, {x: 35, y: 5, cx: 45, cy: 0}, {x: 20, y: 15, cx: 30, cy: 15}, {x: 0, y: 0, cx: 10, cy: 10}], color, '#000', 1.5);
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1;
+        for (let i = 1; i <= 4; i++) { ctx.beginPath(); ctx.moveTo(15 + i*5, -20 + i*3); ctx.quadraticCurveTo(20 + i*8, -5 + i*5, 30 + i*5, 10 - i*2); ctx.stroke(); }
+        ctx.restore();
+    };
+    const drawBatWing = (side, flapAngle, color) => {
+        ctx.save(); const dir = side === 'left' ? -1 : 1; ctx.scale(dir, 1); ctx.rotate(flapAngle);
+        drawPath([{x: 0, y: 0}, {x: 30, y: -30, cx: 15, cy: -25}, {x: 70, y: -20, cx: 50, cy: -40}, {x: 50, y: 10, cx: 60, cy: -5}, {x: 30, y: 20, cx: 40, cy: 15}, {x: 10, y: 15, cx: 20, cy: 20}, {x: 0, y: 0}], color, '#1A202C', 2);
+        ctx.beginPath(); ctx.moveTo(30, -30); ctx.quadraticCurveTo(40, -10, 50, 10); ctx.moveTo(30, -30); ctx.quadraticCurveTo(35, 0, 30, 20);
+        ctx.strokeStyle = '#1A202C'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+    };
+    const drawDragonHead = (offsetX, offsetY, scale, rotAngle, color) => {
+        ctx.save(); ctx.translate(offsetX, offsetY); ctx.scale(scale, scale); ctx.rotate(rotAngle);
+        ctx.beginPath(); ctx.moveTo(-8, 0); ctx.quadraticCurveTo(-10, 20, -5, 40); ctx.lineTo(5, 40); ctx.quadraticCurveTo(10, 20, 8, 0); ctx.fillStyle = color; ctx.fill(); ctx.stroke();
+        drawPath([{x: -12, y: 0}, {x: -15, y: -15}, {x: -5, y: -25}, {x: 15, y: -20}, {x: 25, y: -5}, {x: 10, y: 5}, {x: -12, y: 0}], color, '#000', 1.5);
+        ctx.beginPath(); ctx.moveTo(-5, -25); ctx.quadraticCurveTo(-15, -40, -10, -50); ctx.quadraticCurveTo(-5, -35, 0, -22); ctx.fillStyle = '#E2E8F0'; ctx.fill(); ctx.stroke();
+        ctx.fillStyle = accentColor; ctx.beginPath(); ctx.ellipse(-2, -12, 4, 2, Math.PI/4, 0, Math.PI*2); ctx.fill(); ctx.restore();
+    };
+
+    if (id >= 0 && id <= 2) {
+        ctx.fillStyle = '#3182CE'; ctx.beginPath();
+        for (let i = -30; i <= 30; i += 10) ctx.lineTo(i, 5 + Math.sin(time * 3 + i * 0.1) * 3);
+        ctx.lineTo(30, 15); ctx.lineTo(-30, 15); ctx.fill();
+        const neckSway = Math.sin(time) * 10;
+        ctx.strokeStyle = baseColor; ctx.lineWidth = 14; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0, 10); ctx.bezierCurveTo(-20 + neckSway, -10, 20 + neckSway, -30, neckSway * 0.5, -50); ctx.stroke();
+        ctx.save(); ctx.translate(neckSway * 0.5, -50); ctx.rotate(neckSway * 0.02);
+        drawPath([{x: -12, y: -5}, {x: 15, y: -10}, {x: 22, y: 0}, {x: 15, y: 10}, {x: -10, y: 8}, {x: -12, y: -5}], baseColor, '#000', 1.5);
+        if (id === 0) drawPath([{x: -5, y: -8}, {x: -15, y: -20}, {x: 5, y: -12}], '#2B6CB0', '#000', 1);
+        else for(let i=0; i<3; i++) drawPath([{x: -5 + i*5, y: -8}, {x: -10 + i*5, y: -25}, {x: 0 + i*5, y: -10}], '#E53E3E', '#000', 1);
+        ctx.fillStyle = accentColor; ctx.beginPath(); ctx.arc(8, -2, 3, 0, Math.PI*2); ctx.fill(); ctx.restore();
+    }
+    else if (id >= 3 && id <= 5) {
+        const tailCount = id === 3 ? 9 : (id === 4 ? 3 : 1);
+        for (let i = 0; i < tailCount; i++) {
+            const angle = (Math.PI / (tailCount + 1)) * (i + 1) - Math.PI / 2;
+            const sway = Math.sin(time * 2 + i * 0.5) * 15;
+            ctx.save(); ctx.rotate(angle);
+            drawPath([{x: 0, y: 0}, {x: -20, y: -30 + sway, cx: -15, cy: -15}, {x: 0, y: -60 + sway*1.5, cx: -25, cy: -50}, {x: 20, y: -30 + sway, cx: 25, cy: -50}, {x: 0, y: 0, cx: 15, cy: -15}], baseColor, enrage ? '#FC8181' : '#F6AD55', 2);
             ctx.restore();
         }
-        ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fill(); // 身體
-    } else if (m === 29 || m === 36) { // 觸手系 (克拉肯/克蘇魯)
-        ctx.fillStyle = m===29 ? '#82a' : '#262';
-        ctx.beginPath(); ctx.arc(0, -10, 15, 0, Math.PI*2); ctx.fill();
-        for(let i=0; i<6; i++) {
-            let tx = Math.cos(i) * 15 + Math.sin(time*3+i)*5;
-            let ty = 10 + Math.sin(i) * 5;
-            ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(tx/2, ty+10, tx, ty);
-            ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = 4; ctx.stroke();
-        }
-    } else if (m >= 15 && m <= 20) { // 巨獸系
-        ctx.fillStyle = m===15 ? '#842' : m===17 ? '#ddd' : '#555';
-        ctx.fillRect(-15, -20, 30, 40); // 寬身體
-        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, -25, 10, 0, Math.PI*2); ctx.fill(); // 頭
-        if(m===15) { // 牛角
-            ctx.strokeStyle='#fff'; ctx.lineWidth=2; 
-            ctx.beginPath(); ctx.moveTo(-8,-30); ctx.quadraticCurveTo(-15,-40, -20,-35); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(8,-30); ctx.quadraticCurveTo(15,-40, 20,-35); ctx.stroke();
-        }
-    } else if (m===3 || m===34 || m===35) { // 飛行翼族
-        ctx.fillStyle = m===3 ? '#333' : m===34 ? '#252' : '#f51';
-        let wingY = Math.sin(time*10) * 10;
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-20, -10+wingY); ctx.lineTo(-30, 10+wingY); ctx.fill(); // 左翼
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(2
+        ctx.save(); ctx.translate(0, -20);
+        drawPath([{x: -15, y: -10}, {x: -25, y: -35}, {x: -5, y: -20}], baseColor, '#000', 1.5); drawPath([{x: 15, y: -10}, {x: 25, y: -35}, {x: 5, y: -20}], baseColor, '#000', 1.5);
+        drawPath([{x: 0, y: 15}, {x: -25, y: -10}, {x: -15
