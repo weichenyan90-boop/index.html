@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>英單防線：像素騎士風 (最終版)</title>
+<title>英單防線：像素騎士風 (終極重構版)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -13,8 +13,7 @@
     --p-color: #0ff;
     --s-color: #f0f;
     --bg-dark: #0a0a1a;
-    --ui-bg: rgba(10, 10, 25, 0.95);
-    --btn-bg: #222;
+    --btn-bg: rgba(20, 20, 40, 0.8);
     --err: #ff3366;
     --succ: #33ffaa;
     --gold: #ffd700;
@@ -32,12 +31,15 @@
   
   /* UI Screens */
   .screen, .modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; }
-  .screen { z-index: 10; }
+  .screen { z-index: 10; pointer-events: none; }
   .modal { z-index: 30; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); padding: 20px; overflow-y: auto; pointer-events: auto; justify-content: flex-start; }
   .active { display: flex !important; }
-  
-  /* Global Buttons & Text */
-  .btn { pointer-events: auto; background: var(--btn-bg); border: 4px solid #555; color: #fff; padding: 10px 15px; font-size: 20px; font-weight: bold; cursor: pointer; text-transform: uppercase; text-shadow: 2px 2px 0 #000; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.6), inset 4px 4px 0 rgba(255,255,255,0.2); transition: transform 0.1s, filter 0.1s; text-align: center; }
+
+  /* Ensure screen elements with interaction have pointer-events auto */
+  .screen.active > * { pointer-events: auto; }
+  #combat-ui { pointer-events: none !important; } 
+
+  .btn { pointer-events: auto; background: var(--btn-bg); border: 2px solid #555; color: #fff; padding: 10px 15px; font-size: 20px; font-weight: bold; cursor: pointer; text-transform: uppercase; text-shadow: 2px 2px 0 #000; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.6), inset 2px 2px 0 rgba(255,255,255,0.2); transition: transform 0.1s, filter 0.1s; text-align: center; }
   .btn:active { transform: translateY(4px); box-shadow: inset 4px 4px 0 rgba(0,0,0,0.6); filter: brightness(1.2); }
   .btn:disabled { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
   .modal-close { position: absolute; top: 15px; right: 15px; z-index: 40; background: var(--err); border-color: #900; }
@@ -46,31 +48,25 @@
   .text-glow-gold { color: var(--gold); text-shadow: 0 0 10px var(--gold), 2px 2px 0 #000; }
   .text-glow-magenta { color: var(--s-color); text-shadow: 0 0 10px var(--s-color), 2px 2px 0 #000; }
   
-  /* HUD */
-  .hud { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; z-index: 20; display: flex; justify-content: space-between; pointer-events: none; text-shadow: 2px 2px 0 #000; }
   .fps { font-size: 16px; color: #aaa; position: absolute; top: 5px; right: 5px; z-index: 50; pointer-events: none;}
   
   /* --- Screen: Main Menu --- */
   #main-menu { background: linear-gradient(to bottom, #112, #001); justify-content: space-between; padding-bottom: 20px; pointer-events: auto; }
-  
-  /* Commander Bar */
   .commander-bar { display: flex; flex-direction: column; padding: 10px; background: rgba(0,0,0,0.8); border-bottom: 4px solid var(--p-color); image-rendering: pixelated; }
   .cmd-top { display: flex; justify-content: space-between; align-items: center; }
   .rank-title { font-size: 24px; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 var(--p-color); }
   .coins-display { font-size: 24px; font-weight: bold; color: var(--gold); display: flex; align-items: center; gap: 5px; text-shadow: 2px 2px 0 #000; }
   .cmd-actions { display: flex; justify-content: space-between; margin-top: 10px; gap: 10px; }
   
-  /* Hangar Showcase */
   .hangar { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; margin: 10px 0; }
   .hangar-title { position: absolute; top: 0; font-size: 20px; color: #aaa; text-shadow: 2px 2px 0 #000; }
   #hangar-canvas-container { width: 250px; height: 250px; position: relative; }
   #hangar-canvas { position: absolute; width: 100%; height: 100%; image-rendering: pixelated; }
-  .hangar-info { text-align: center; margin-top: 10px; background: rgba(0,0,0,0.8); padding: 10px 20px; border: 4px solid #444; }
-  .rarity-badge { display: inline-block; padding: 2px 8px; border: 2px solid #fff; font-size: 16px; font-weight: bold; margin-bottom: 5px; color:#000; text-shadow: none; }
+  .hangar-info { text-align: center; margin-top: 10px; background: rgba(0,0,0,0.8); padding: 10px 20px; border: 2px solid var(--p-color); border-radius: 8px; }
+  .rarity-badge { display: inline-block; padding: 2px 8px; border: 2px solid #fff; font-size: 16px; font-weight: bold; margin-bottom: 5px; color:#000; text-shadow: none; border-radius: 4px; }
   
-  /* Campaign Boards */
   .campaign-container { display: flex; flex-direction: column; gap: 15px; padding: 0 20px; }
-  .campaign-card { position: relative; height: 90px; border: 4px solid #555; display: flex; align-items: center; padding: 15px; cursor: pointer; transition: border-color 0.2s; background: #222; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5), inset 4px 4px 0 rgba(255,255,255,0.1); }
+  .campaign-card { position: relative; height: 90px; border: 2px solid #555; display: flex; align-items: center; padding: 15px; cursor: pointer; transition: border-color 0.2s; background: rgba(20,20,40,0.9); border-radius: 10px; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.5); }
   .campaign-card:active { transform: translateY(4px); box-shadow: inset 4px 4px 0 rgba(0,0,0,0.5); }
   .campaign-card.vocab { border-color: var(--p-color); }
   .campaign-card.grammar { border-color: var(--s-color); }
@@ -79,78 +75,77 @@
   .vocab .c-card-title { color: var(--p-color); }
   .grammar .c-card-title { color: var(--s-color); }
   .c-card-prog { font-size: 18px; color: #ccc; display: flex; justify-content: space-between; text-shadow: 1px 1px 0 #000; }
-  .prog-bar-bg { width: 100%; height: 8px; background: #000; border: 2px solid #444; margin-top: 8px; }
+  .prog-bar-bg { width: 100%; height: 8px; background: #000; border-radius: 4px; overflow: hidden; margin-top: 8px; }
   .prog-bar-fill { height: 100%; transition: width 0.3s; }
-  .vocab .prog-bar-fill { background: var(--p-color); }
-  .grammar .prog-bar-fill { background: var(--s-color); }
+  .vocab .prog-bar-fill { background: var(--p-color); box-shadow: 0 0 10px var(--p-color); }
+  .grammar .prog-bar-fill { background: var(--s-color); box-shadow: 0 0 10px var(--s-color); }
   
-  /* Bottom Corner Buttons */
   .sys-btn-container { display: flex; justify-content: space-between; padding: 0 20px; margin-top: 15px; }
-  .sys-btn { width: 80px; height: 80px; border: 4px solid; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 18px; font-weight: bold; text-align: center; cursor: pointer; position: relative; background: #222; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5); text-shadow: 2px 2px 0 #000; }
+  .sys-btn { width: 80px; height: 80px; border: 2px solid; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 18px; font-weight: bold; text-align: center; cursor: pointer; position: relative; background: rgba(20,20,40,0.9); border-radius: 15px; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.5); text-shadow: 2px 2px 0 #000; }
   .sys-btn.gacha { border-color: var(--gold); color: var(--gold); }
   .sys-btn.dex { border-color: var(--s-color); color: var(--s-color); }
-  .sys-btn:active { transform: translateY(4px); box-shadow: inset 4px 4px 0 rgba(0,0,0,0.5); }
+  .sys-btn:active { transform: translateY(4px); box-shadow: inset 2px 2px 0 rgba(0,0,0,0.5); }
   .sys-btn-icon { font-size: 32px; margin-bottom: 2px; }
-  .badge-dot { position: absolute; top: -10px; right: -10px; width: 20px; height: 20px; background: red; border: 4px solid #000; animation: pulse 1s infinite; display: none; }
   
-  /* --- Screen: Combat UI (Responsive) --- */
-  #combat-ui { flex-direction: column; justify-content: flex-end; background: transparent; }
+  /* --- Screen: Combat UI --- */
   .combat-top-hud { position: absolute; top: 10px; width: 100%; padding: 0 20px; display: flex; justify-content: space-between; pointer-events: none; z-index: 20; }
   .base-hp-container { display: flex; align-items: center; gap: 10px; }
-  .base-hp-bar { width: 120px; height: 20px; background: #000; border: 4px solid #fff; position: relative; }
-  .base-hp-fill { height: 100%; background: #f00; transition: width 0.2s, background-color 0.2s; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3); }
+  .base-hp-bar { width: 140px; height: 20px; background: rgba(0,0,0,0.6); border: 2px solid #fff; border-radius: 10px; overflow: hidden; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+  .base-hp-fill { height: 100%; background: #f00; transition: width 0.2s, background-color 0.2s; box-shadow: 0 0 10px #f00; }
+  .base-hp-shield { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0, 255, 255, 0.4); box-shadow: inset 0 0 10px #0ff; display: none; }
   
-  .qa-panel { height: 48%; width: 100%; background: var(--ui-bg); border-top: 4px solid var(--p-color); display: flex; flex-direction: column; padding: 15px; pointer-events: auto; z-index: 20; box-shadow: 0 -10px 20px rgba(0,0,0,0.5); transition: border-color 0.2s; }
-  
-  @media (orientation: landscape) and (min-width: 500px) {
-      #combat-ui { flex-direction: row; justify-content: flex-end; }
-      .qa-panel { height: 100%; width: 45%; max-width: 450px; border-top: none; border-left: 4px solid var(--p-color); box-shadow: -10px 0 20px rgba(0,0,0,0.8); }
-      .combat-top-hud { width: 55%; }
-  }
+  .tactical-hud { position: absolute; top: 50px; left: 20px; right: 20px; display: flex; justify-content: center; gap: 15px; z-index: 20; pointer-events: auto; }
+  .skill-btn { flex: 1; max-width: 120px; background: rgba(0,0,0,0.6); border: 2px solid #555; color: #777; padding: 8px 5px; text-align: center; border-radius: 10px; transition: all 0.3s; pointer-events: none; font-size: 16px; text-shadow: 1px 1px 0 #000; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
+  .skill-btn.ready { border-color: var(--gold); color: #fff; background: rgba(255,215,0,0.15); box-shadow: 0 0 15px rgba(255,215,0,0.4), inset 0 0 15px rgba(255,215,0,0.2); cursor: pointer; pointer-events: auto; }
+  .skill-btn.ready:active { transform: translateY(4px); box-shadow: none; filter: brightness(1.5); }
+  .energy-progress-container { width: 100%; height: 6px; background: #222; border-radius: 3px; overflow: hidden; margin-top: 5px; }
+  .energy-progress-fill { height: 100%; background: var(--gold); width: 0%; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 5px var(--gold); }
 
-  .timer-bar-container { width: 100%; height: 12px; background: #000; border: 2px solid #555; margin-bottom: 12px; }
-  .timer-bar { height: 100%; background: var(--p-color); width: 100%; transition: width 0.1s linear, background 0.3s; }
-  .question-box { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 28px; font-weight: bold; padding: 0 10px; margin-bottom: 15px; text-shadow: 2px 2px 0 #000; line-height: 1.4; }
-  .options-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-gap: 12px; height: 60%; }
-  .opt-btn { background: #334; border: 4px solid #778; color: white; font-size: 24px; font-weight: bold; display: flex; justify-content: center; align-items: center; padding: 5px; text-align: center; transition: all 0.1s; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5); text-shadow: 2px 2px 0 #000; cursor: pointer;}
-  .opt-btn:active { transform: translateY(4px); box-shadow: inset 4px 4px 0 rgba(0,0,0,0.5); }
-  .opt-btn.correct { background: var(--succ); border-color: #fff; color: #000; text-shadow: none; }
-  .opt-btn.wrong { background: var(--err); border-color: #fff; color: #fff; }
+  .qa-panel { 
+    position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); 
+    width: 95%; max-width: 600px; 
+    background: rgba(10, 15, 30, 0.4); 
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border: 2px solid rgba(0, 255, 255, 0.5); border-radius: 15px;
+    display: flex; flex-direction: column; padding: 15px; pointer-events: auto; z-index: 20; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 15px rgba(0,255,255,0.1); 
+    transition: border-color 0.2s; 
+  }
   
-  /* --- Modals & Grid --- */
+  .timer-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.6); border-radius: 4px; overflow: hidden; margin-bottom: 12px; border: 1px solid #333; }
+  .timer-bar { height: 100%; background: var(--p-color); width: 100%; transition: width 0.1s linear, background 0.3s; box-shadow: 0 0 10px var(--p-color); }
+  .question-box { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 26px; font-weight: bold; padding: 10px; margin-bottom: 15px; text-shadow: 2px 2px 0 #000; line-height: 1.4; color: #fff; }
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 12px; height: auto; grid-auto-rows: minmax(55px, auto); }
+  .opt-btn { background: rgba(30,40,60,0.6); border: 2px solid rgba(85, 119, 153, 0.8); color: white; font-size: 22px; font-weight: bold; display: flex; justify-content: center; align-items: center; padding: 8px; text-align: center; transition: all 0.1s; border-radius: 10px; cursor: pointer; text-shadow: 2px 2px 4px #000; box-shadow: 0 4px 6px rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
+  .opt-btn:active { transform: translateY(4px); box-shadow: none; }
+  .opt-btn.correct { background: rgba(51,255,170,0.9); border-color: #fff; color: #000; text-shadow: none; box-shadow: 0 0 20px var(--succ); }
+  .opt-btn.wrong { background: rgba(255,51,102,0.9); border-color: #fff; color: #fff; box-shadow: 0 0 20px var(--err); }
+  .opt-btn.hidden-5050 { visibility: hidden; pointer-events: none; }
+  
+  /* --- Modals --- */
   .grid-list { display: grid; gap: 10px; padding: 10px 0; }
   .gacha-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
   .dex-grid { grid-template-columns: repeat(2, 1fr); }
-  
-  .card-item { background: #222; border: 4px solid #555; padding: 10px; text-align: center; cursor: pointer; transition: transform 0.1s; position: relative; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5); }
-  .card-item:active { transform: translateY(4px); box-shadow: inset 4px 4px 0 rgba(0,0,0,0.5); }
+  .card-item { background: #222; border: 2px solid #555; padding: 10px; text-align: center; cursor: pointer; transition: transform 0.1s; position: relative; border-radius: 8px; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.5); }
+  .card-item:active { transform: translateY(4px); }
   .card-item.locked { filter: grayscale(1) brightness(0.5); pointer-events: none; }
-  .list-row { background: #222; border: 4px solid #445; padding: 12px; margin-bottom: 10px; }
+  .list-row { background: #222; border: 2px solid #445; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
   
-  /* New Monster Animation overlay */
-  .new-monster-anim { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); border: 4px solid var(--gold); padding: 20px 40px; text-align: center; z-index: 100; animation: slideDownFlash 2.5s forwards; box-shadow: 0 0 30px var(--gold); }
-  .nm-title { color: var(--gold); font-size: 32px; text-shadow: 2px 2px 0 #000, 0 0 10px var(--gold); margin-bottom:15px;}
-  .nm-icon { width: 64px; height: 64px; margin: 0 auto 15px; border: 4px solid #fff; box-shadow: 0 0 15px #fff;}
-  .nm-name { color: #fff; font-size: 28px; text-shadow: 2px 2px 0 #000;}
-  @keyframes slideDownFlash { 0% { top: -20%; opacity: 0; } 10% { top: 20%; opacity: 1; box-shadow: 0 0 50px #fff; } 20% { box-shadow: 0 0 30px var(--gold); } 80% { top: 20%; opacity: 1; } 100% { top: 20%; opacity: 0; transform: translateX(-50%) scale(0.8); } }
-  
-  /* Gacha Animation */
   #gacha-anim { background: #000; justify-content: center; align-items: center; z-index: 50; overflow: hidden; }
-  .summon-circle { width: 250px; height: 250px; border: 8px dashed #fff; animation: spin 2s linear infinite; display: flex; justify-content: center; align-items: center; position: relative; }
-  .summon-core { width: 80px; height: 80px; background: #fff; border: 4px solid #000; box-shadow: 0 0 50px #fff; animation: pulse 0.5s infinite alternate; }
+  .summon-circle { width: 250px; height: 250px; border: 8px dashed #fff; border-radius: 50%; animation: spin 2s linear infinite; display: flex; justify-content: center; align-items: center; position: relative; box-shadow: 0 0 50px rgba(255,255,255,0.5); }
+  .summon-core { width: 80px; height: 80px; background: #fff; border-radius: 50%; box-shadow: 0 0 50px #fff; animation: pulse 0.5s infinite alternate; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
   
-  /* Victory Banner */
-  .victory-banner { font-size: 48px; font-weight: 900; color: var(--gold); text-shadow: 4px 4px 0 #000, 0 0 20px var(--gold); text-align: center; margin: 20px auto; animation: slideDownBounce 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform: translateY(-100vh); }
+  .victory-banner { font-size: 48px; font-weight: 900; color: var(--gold); text-shadow: 4px 4px 0 #000, 0 0 30px var(--gold); text-align: center; margin: 20px auto; animation: slideDownBounce 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform: translateY(-100vh); }
   @keyframes slideDownBounce { to { transform: translateY(0); } }
   
   .stage-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 20px; }
-  .stage-btn { aspect-ratio: 1; display: flex; justify-content: center; align-items: center; background: #333; border: 4px solid #555; font-size: 24px; font-weight: bold; cursor: pointer; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5); }
-  .stage-btn.unlocked { border-color: var(--p-color); color: #fff; }
+  .stage-btn { aspect-ratio: 1; display: flex; justify-content: center; align-items: center; background: #333; border: 2px solid #555; border-radius: 8px; font-size: 24px; font-weight: bold; cursor: pointer; }
+  .stage-btn.unlocked { border-color: var(--p-color); color: #fff; box-shadow: inset 0 0 10px rgba(0,255,255,0.3); }
   .stage-btn.locked { opacity: 0.3; pointer-events: none; }
-  .stage-btn.current { background: var(--p-color); color: #000; text-shadow: none; box-shadow: none; }
+  .stage-btn.current { background: var(--p-color); color: #000; text-shadow: none; box-shadow: 0 0 15px var(--p-color); }
   
-  #overheat-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,0,0,0.3); pointer-events: none; display: none; z-index: 25; mix-blend-mode: multiply; }
+  #overheat-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,0,0,0.25); pointer-events: none; display: none; z-index: 25; mix-blend-mode: color-burn; }
 </style>
 </head>
 <body>
@@ -172,8 +167,7 @@
       </div>
       <div class="cmd-actions">
         <button class="btn" style="flex:1; font-size:16px; padding:8px;" onclick="UI.openMistakes()">錯題本 <span id="mistake-cnt" style="color:var(--err);">(0)</span></button>
-        <button class="btn" style="flex:1; font-size:16px; padding:8px; border-color:var(--gold); color:var(--gold);" onclick="Game.claimDaily()" id="btn-daily">每日補給</button>
-        <button class="btn" style="padding:8px; font-size:16px;" onclick="Game.addTestCoins()">+5000</button>
+        <button class="btn" style="flex:1; font-size:16px; padding:8px; border-color:var(--gold); color:var(--gold);" onclick="Game.claimDaily()">每日補給</button>
       </div>
     </div>
     
@@ -191,14 +185,14 @@
       <div class="campaign-card vocab" onclick="UI.openStageSelect('vocab')">
         <div class="c-card-content">
           <div class="c-card-title">單字征途</div>
-          <div class="c-card-prog"><span id="prog-txt-vocab">第 1 關</span> <span></span></div>
+          <div class="c-card-prog"><span id="prog-txt-vocab">第 1 關</span></div>
           <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-bar-vocab" style="width: 1%;"></div></div>
         </div>
       </div>
       <div class="campaign-card grammar" onclick="UI.openStageSelect('grammar')">
         <div class="c-card-content">
           <div class="c-card-title">文法試煉</div>
-          <div class="c-card-prog"><span id="prog-txt-grammar">第 1 關</span> <span></span></div>
+          <div class="c-card-prog"><span id="prog-txt-grammar">第 1 關</span></div>
           <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-bar-grammar" style="width: 1%;"></div></div>
         </div>
       </div>
@@ -207,11 +201,10 @@
     <div class="sys-btn-container">
       <div class="sys-btn gacha" onclick="UI.openGacha()">
         <div class="sys-btn-icon">🎰</div>商店
-        <div class="badge-dot" id="gacha-badge"></div>
       </div>
       <div class="sys-btn dex" onclick="UI.openDex()">
         <div class="sys-btn-icon">📖</div>圖鑑
-        <div style="font-size:14px; color:#aaa; margin-top:2px; text-shadow:1px 1px 0 #000;" id="dex-prog-txt">0/42</div>
+        <div style="font-size:14px; color:#aaa; margin-top:2px;" id="dex-prog-txt">0/42</div>
       </div>
     </div>
   </div>
@@ -220,25 +213,45 @@
   <div id="combat-ui" class="screen">
     <div class="combat-top-hud">
       <div class="base-hp-container">
-        <span style="font-size:28px; text-shadow:2px 2px 0 #000;">🛡️</span>
-        <div class="base-hp-bar"><div class="base-hp-fill" id="combat-hp-fill"></div></div>
+        <span style="font-size:28px; text-shadow: 0 0 10px #0ff;">🛡️</span>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+            <div class="base-hp-bar">
+                <div class="base-hp-fill" id="combat-hp-fill"></div>
+                <div class="base-hp-shield" id="combat-hp-shield"></div>
+            </div>
+        </div>
       </div>
       <div style="text-align:right;">
-        <div id="combat-stage-info" style="font-size:18px; color:#aaa; text-shadow:2px 2px 0 #000;">單字 第1關</div>
-        <div id="combat-enemies" style="font-size:20px; font-weight:bold; color:#fff; text-shadow:2px 2px 0 #000;">剩餘: 0</div>
+        <div id="combat-stage-info" style="font-size:18px; color:#ccc; text-shadow:2px 2px 0 #000, 0 0 5px #0ff;">單字 第1關</div>
+        <div id="combat-enemies" style="font-size:22px; font-weight:bold; color:#fff; text-shadow:2px 2px 0 #000, 0 0 5px #f00;">剩餘: 0</div>
       </div>
     </div>
+
+    <div class="tactical-hud">
+        <div class="skill-btn" id="skill-1" onclick="Combat.useSkill(1)">
+            🛡️修復防禦<br><span style="font-size:12px; color:#ccc;">30 EP</span>
+            <div class="energy-progress-container"><div class="energy-progress-fill" id="ep-bar-1"></div></div>
+        </div>
+        <div class="skill-btn" id="skill-2" onclick="Combat.useSkill(2)">
+            ⏱️時空凝滯<br><span style="font-size:12px; color:#ccc;">50 EP</span>
+            <div class="energy-progress-container"><div class="energy-progress-fill" id="ep-bar-2"></div></div>
+        </div>
+        <div class="skill-btn" id="skill-3" onclick="Combat.useSkill(3)">
+            ☢️軌道打擊<br><span style="font-size:12px; color:#ccc;">100 EP</span>
+            <div class="energy-progress-container"><div class="energy-progress-fill" id="ep-bar-3"></div></div>
+        </div>
+    </div>
     
-    <div id="fever-text" style="position:absolute; top:30%; left:50%; transform:translate(-50%,-50%); font-size:60px; font-weight:900; color:var(--gold); text-shadow:4px 4px 0 #000, 0 0 20px var(--gold); display:none; z-index:25; animation:pulse 0.5s infinite;">FEVER!</div>
+    <div id="fever-text" style="position:absolute; top:25%; left:50%; transform:translate(-50%,-50%); font-size:60px; font-weight:900; color:var(--gold); text-shadow:4px 4px 0 #000, 0 0 30px var(--gold); display:none; z-index:25; animation:pulse 0.5s infinite; pointer-events:none;">FEVER! 狂暴火力</div>
     
     <div class="qa-panel" id="qa-panel">
       <div class="timer-bar-container"><div class="timer-bar" id="qa-timer"></div></div>
       <div class="question-box" id="qa-q">Question text here?</div>
       <div class="options-grid">
-        <button class="opt-btn" id="qa-0">A</button>
-        <button class="opt-btn" id="qa-1">B</button>
-        <button class="opt-btn" id="qa-2">C</button>
-        <button class="opt-btn" id="qa-3">D</button>
+        <div class="opt-btn" id="qa-0">A</div>
+        <div class="opt-btn" id="qa-1">B</div>
+        <div class="opt-btn" id="qa-2">C</div>
+        <div class="opt-btn" id="qa-3">D</div>
       </div>
     </div>
   </div>
@@ -248,7 +261,7 @@
     <button class="btn modal-close" onclick="UI.closeModal('modal-stage')">X</button>
     <h2 class="text-glow-cyan" id="ms-title">選擇關卡</h2>
     <div class="stage-grid" id="ms-grid"></div>
-    <div style="margin-top: 20px; text-align: center;"><button class="btn" style="width:100%; padding:15px; font-size:24px;" id="ms-start-btn">出戰</button></div>
+    <div style="margin-top: 20px; text-align: center;"><button class="btn" style="width:100%; padding:15px; font-size:24px; border-color:var(--p-color);" id="ms-start-btn">出戰</button></div>
   </div>
 
   <div id="modal-gacha" class="modal">
@@ -259,20 +272,20 @@
       <button class="btn" style="flex:1;" onclick="Gacha.pull(1)">單抽<br><span style="font-size:16px; font-weight:normal; color:#aaa;">100 💎</span></button>
       <button class="btn" style="flex:1; border-color:var(--s-color); color:var(--s-color);" onclick="Gacha.pull(10)">10連抽 (保底SR)<br><span style="font-size:16px; font-weight:normal; color:#aaa;">900 💎</span></button>
     </div>
-    <h3 style="border-bottom:4px solid #444; padding-bottom:5px; margin-bottom:10px;">機庫</h3>
+    <h3 style="border-bottom:2px solid #444; padding-bottom:5px; margin-bottom:10px;">機庫</h3>
     <div class="grid-list gacha-grid" id="mg-inv"></div>
   </div>
 
   <div id="modal-turret" class="modal" style="z-index:35;">
     <button class="btn modal-close" onclick="UI.closeModal('modal-turret')">X</button>
-    <div style="height:40%; display:flex; justify-content:center; align-items:center; border-bottom:4px solid #333; margin-bottom:15px; position:relative;"><div id="td-canvas-container" style="width:250px; height:250px; position:relative;"></div></div>
+    <div style="height:40%; display:flex; justify-content:center; align-items:center; border-bottom:2px solid #333; margin-bottom:15px; position:relative;"><div id="td-canvas-container" style="width:250px; height:250px; position:relative;"></div></div>
     <div style="text-align:center;">
       <div class="rarity-badge" id="td-rare">SSR</div>
       <h2 id="td-name" style="margin:5px 0; font-size:32px;">Name</h2>
       <div style="color:var(--gold); font-weight:bold; font-size:24px; margin-bottom:15px;" id="td-level">Lv.1</div>
       <div class="list-row" style="text-align:left;"><div style="color:#aaa; font-size:16px; margin-bottom:5px;">特性</div><div id="td-type" style="color:#fff; font-size:20px;">Type</div></div>
       <div class="list-row" style="text-align:left;"><div style="color:var(--p-color); font-size:16px; margin-bottom:5px;">技能</div><div id="td-skill" style="font-weight:bold; font-size:20px;">Skill</div></div>
-      <button class="btn" style="width:100%; padding:15px; font-size:24px; margin-top:10px;" id="td-equip-btn">裝備</button>
+      <button class="btn" style="width:100%; padding:15px; font-size:24px; margin-top:10px; border-color:var(--p-color);" id="td-equip-btn">裝備</button>
     </div>
   </div>
 
@@ -293,65 +306,80 @@
 
   <div id="modal-mistakes" class="modal">
     <button class="btn modal-close" onclick="UI.closeModal('modal-mistakes')">X</button>
-    <h2 class="text-glow-cyan">錯題本</h2>
-    <div style="text-align:center; margin:10px 0; font-size:16px; color:#aaa;">自動記錄答錯或超時題目</div>
+    <h2 class="text-glow-cyan">錯題本 (艾賓浩斯加權)</h2>
+    <div style="text-align:center; margin:10px 0; font-size:16px; color:#aaa;">記錄錯題自動提升再次出現機率</div>
     <div id="mm-list" style="flex:1; overflow-y:auto; padding-bottom:20px;"></div>
+  </div>
+
+  <div id="modal-revive" class="modal" style="justify-content:center; text-align:center; background:rgba(0,0,0,0.95); z-index: 60;">
+    <h1 style="color:var(--err); font-size: 48px;">防線崩潰</h1>
+    <div style="margin: 20px 0; font-size: 20px; color: #fff;">基地即將全毀，是否請求軌道核彈支援並重生？</div>
+    <div style="display:flex; gap:15px; justify-content:center; margin-top:30px;">
+      <button class="btn" style="flex:1; border-color:#888; color:#aaa;" onclick="Combat.endGame(false)">放棄抵抗</button>
+      <button class="btn" style="flex:2; font-size:24px; border-color:var(--gold); color:var(--gold);" onclick="Combat.revive()">消耗 200 💎 復活</button>
+    </div>
   </div>
 
   <div id="modal-result" class="modal" style="justify-content:center; text-align:center; background:rgba(0,0,0,0.95);">
     <div class="victory-banner" id="res-title">VICTORY！</div>
-    <div style="background:#222; border:4px solid #555; padding:20px; margin:20px 0; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5);">
+    <div style="background:#222; border:2px solid #555; border-radius:15px; padding:20px; margin:20px 0; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.5);">
       <div id="res-stage" style="color:#aaa; font-size:20px; margin-bottom:10px;">單字 第 1 關</div>
       <div style="font-size:32px; color:var(--gold); font-weight:bold; margin-bottom:10px; text-shadow:2px 2px 0 #000;" id="res-reward">獲得 +100 💎</div>
       <div id="res-stats" style="color:#fff; font-size:24px;">答對率: 100%</div>
     </div>
     <div style="display:flex; gap:15px; justify-content:center; margin-top:30px;">
       <button class="btn" style="flex:1; border-color:#888; color:#aaa;" onclick="UI.showMenu()">大廳</button>
-      <button class="btn" style="flex:2; font-size:24px;" id="res-next-btn" onclick="Game.nextStage()">下一關</button>
+      <button class="btn" style="flex:2; font-size:24px; border-color:var(--p-color);" id="res-next-btn" onclick="Game.nextStage()">下一關</button>
     </div>
   </div>
-
 </div>
 
 <script>
-/* === Data DB === */
-const Q_RAW = `vocab|1|A ___ is an animal kept in the house.|pet|car|cup|pen|0|pet=寵物
-vocab|1|I use a ___ to write.|book|pen|bag|cup|1|pen=筆
-vocab|1|The ___ shines in the day.|moon|star|sun|cloud|2|sun=太陽
-vocab|1|She reads a ___ every night.|book|shoe|tree|car|0|book=書
-vocab|1|We eat food on a ___.|wall|table|floor|door|1|table=桌子
-grammar|1|He ___ a student.|is|am|are|be|0|主詞He配is
-grammar|1|I ___ to school every day.|go|goes|went|going|0|每天發生用現在簡單式
-grammar|1|They ___ playing basketball now.|is|am|are|be|2|現在進行式複數用are`;
-
-const QUESTIONS_DB = Q_RAW.trim().split('\n').filter(l=>l).map(line => {
-  const p = line.split('|'); return { route: p[0], diff: parseInt(p[1]), q: p[2], opts: [p[3], p[4], p[5], p[6]], ans: parseInt(p[7]), exp: p[8] };
-});
+/* === Data DB (外部 JSON 模擬) === */
+const QUESTIONS_JSON = [
+  { route: 'vocab', diff: 1, q: 'A ___ is an animal kept in the house.', opts: ['pet','car','cup','pen'], ans: 0, exp: 'pet=寵物' },
+  { route: 'vocab', diff: 1, q: 'I use a ___ to write.', opts: ['book','pen','bag','cup'], ans: 1, exp: 'pen=筆' },
+  { route: 'vocab', diff: 1, q: 'The ___ shines in the day.', opts: ['moon','star','sun','cloud'], ans: 2, exp: 'sun=太陽' },
+  { route: 'vocab', diff: 1, q: 'She reads a ___ every night.', opts: ['book','shoe','tree','car'], ans: 0, exp: 'book=書' },
+  { route: 'vocab', diff: 1, q: 'We eat food on a ___.', opts: ['wall','table','floor','door'], ans: 1, exp: 'table=桌子' },
+  { route: 'grammar', diff: 1, q: 'He ___ a student.', opts: ['is','am','are','be'], ans: 0, exp: '主詞He配is' },
+  { route: 'grammar', diff: 1, q: 'I ___ to school every day.', opts: ['go','goes','went','going'], ans: 0, exp: '每天發生用現在簡單式' },
+  { route: 'grammar', diff: 1, q: 'They ___ playing basketball now.', opts: ['is','am','are','be'], ans: 2, exp: '現在進行式複數用are' }
+];
+let QUESTIONS_DB = [...QUESTIONS_JSON];
 
 const TURRETS_DB = [
-  { id:0, rare:"N", name:"基礎哨衛砲", clr:"#ccc", b:1, skill:"無", type:"kinetic", desc:"實體動能彈" },
-  { id:1, rare:"R", name:"烈焰噴射器", clr:"#f50", b:1, skill:"燃燒DoT", type:"burn", desc:"附加燃燒" },
-  { id:2, rare:"SR", name:"雷暴特斯拉", clr:"#ff0", b:1, skill:"彈跳3次", type:"chain", desc:"高壓電弧" },
-  { id:3, rare:"UR", name:"太陽神光束", clr:"#fa0", b:1, skill:"貫穿全場", type:"super_laser", desc:"恆星射線" }
+  { id: 0, rare: "N",  name: "基礎哨衛砲", clr: "#ccc", b: 1, skill: "無特殊效果", type: "kinetic",     desc: "標準實體動能彈" },
+  { id: 1, rare: "N",  name: "散射霰彈砲", clr: "#8cf", b: 3, skill: "三向散射",   type: "scatter",     desc: "同時發射三枚彈頭" },
+  { id: 2, rare: "R",  name: "烈焰噴射器", clr: "#f50", b: 1, skill: "燃燒DoT",   type: "burn",        desc: "附加 3 秒持續灼燒" },
+  { id: 3, rare: "R",  name: "極地冷凍砲", clr: "#0ff", b: 1, skill: "緩速3秒",   type: "slow",        desc: "降低敵軍 50% 移動速度" },
+  { id: 4, rare: "R",  name: "劇毒蜂針砲", clr: "#a0f", b: 1, skill: "猛毒侵蝕",   type: "poison",      desc: "持續毒傷並削弱敵人" },
+  { id: 5, rare: "SR", name: "雷暴特斯拉", clr: "#ff0", b: 1, skill: "彈跳3次",   type: "chain",       desc: "高壓電弧連鎖跳躍" },
+  { id: 6, rare: "SR", name: "電磁磁軌砲", clr: "#0f8", b: 1, skill: "直線貫穿",   type: "pierce",      desc: "高動能彈穿透整排敵軍" },
+  { id: 7, rare: "SR", name: "黃金賞金砲", clr: "#fd0", b: 1, skill: "雙倍金幣",   type: "gold",        desc: "擊殺敵軍獲得雙倍鑽石" },
+  { id: 8, rare: "UR", name: "太陽神光束", clr: "#fa0", b: 1, skill: "全場掃蕩",   type: "super_laser", desc: "高能恆星射線轟炸全場" },
+  { id: 9, rare: "UR", name: "奇點黑洞砲", clr: "#b0f", b: 1, skill: "重力黑洞",   type: "blackhole",   desc: "大範圍重力場持續碾壓" }
 ];
 const RARE_COLORS = { 'N':'#aaa', 'R':'#a0f', 'SR':'#fd0', 'UR':'#ff0055' };
-
 const MONSTER_NAMES = ["天蛾人","卓柏卡布拉","河童","報喪女妖","地獄犬","鐮鼬","吸血鬼","狼人","溫迪哥","貓妖","飛頭蠻","鵺","隱形鬼","飛龍","雪男","石像鬼","牛頭人","獨眼巨人","貝希摩斯","哥布林王","巨魔","弗蘭肯斯坦","泥人","大腳怪","樹精","沙蟲","冰霜巨獸","熔岩魔","尼斯湖水怪","九尾妖狐","海怪克拉肯","八岐大蛇","美杜莎","利維坦","邪神克蘇魯","百眼巨人","刻耳柏洛斯","龍王","鳳凰","饕餮","窮奇","混沌"];
+
+// --- 5 大特色像素怪物圖鑑生成 ---
 const MONSTERS_DB = MONSTER_NAMES.map((name, i) => {
-  let type = i<14?'swift':(i<28?'heavy':'boss');
-  let spd=type==='swift'?60:(type==='heavy'?30:15);
-  let hp=type==='swift'?15:(type==='heavy'?60:200);
-  let size=type==='swift'?20:(type==='heavy'?35:55);
-  let clr=type==='swift'?'#f44':(type==='heavy'?'#889':'#b0f');
-  return { id:i, name, type, spd, hp, size, clr };
+  let archetype = i < 12 ? 'slime' : (i < 22 ? 'goblin' : (i < 30 ? 'skeleton' : (i < 38 ? 'gargoyle' : 'dragon')));
+  let type = (archetype === 'goblin' || archetype === 'gargoyle') ? 'swift' : ((archetype === 'slime' || archetype === 'skeleton') ? 'heavy' : 'boss');
+  let spd = archetype === 'goblin' ? 120 : (archetype === 'gargoyle' ? 70 : (archetype === 'slime' ? 40 : (archetype === 'skeleton' ? 25 : 15)));
+  let hp = archetype === 'goblin' ? 20 : (archetype === 'gargoyle' ? 30 : (archetype === 'slime' ? 60 : (archetype === 'skeleton' ? 120 : 500)));
+  let size = archetype === 'dragon' ? 55 : (archetype === 'skeleton' ? 35 : 20);
+  let clr = archetype === 'slime' ? '#2ecc71' : (archetype === 'goblin' ? '#27ae60' : (archetype === 'skeleton' ? '#bdc3c7' : (archetype === 'gargoyle' ? '#7f8c8d' : '#8e44ad')));
+  return { id: i, name, archetype, type, spd, hp, size, clr };
 });
 
 /* === Core State === */
 const DEFAULT_STATE = { coins:0, maxStageVocab:1, maxStageGrammar:1, turrets:[0, 1, 2, 3], turretLvls:{0:1,1:1,2:1,3:1}, equippedTurret:0, dex:[], mistakes:[], lastDaily:0 };
 let State = JSON.parse(JSON.stringify(DEFAULT_STATE));
 const SaveSys = {
-  load() { try { let s = localStorage.getItem('ED_SAVE_V4'); if(s) { let d=JSON.parse(s); Object.keys(DEFAULT_STATE).forEach(k=>{ if(d[k]!==undefined) State[k]=d[k]; }); } } catch(e){} this.save(); },
-  save() { localStorage.setItem('ED_SAVE_V4', JSON.stringify(State)); }
+  load() { try { let s = localStorage.getItem('ED_SAVE_V6'); if(s) { let d=JSON.parse(s); Object.keys(DEFAULT_STATE).forEach(k=>{ if(d[k]!==undefined) State[k]=d[k]; }); } } catch(e){} this.save(); },
+  save() { localStorage.setItem('ED_SAVE_V6', JSON.stringify(State)); }
 };
 
 /* === Audio === */
@@ -360,97 +388,231 @@ const AudioSys = {
   play(freq,type,dur,vol=0.1){ if(!this.ctx)return; try{ let osc=this.ctx.createOscillator(), gain=this.ctx.createGain(); osc.type=type; osc.frequency.setValueAtTime(freq,this.ctx.currentTime); osc.connect(gain); gain.connect(this.ctx.destination); gain.gain.setValueAtTime(vol,this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+dur); osc.start(); osc.stop(this.ctx.currentTime+dur); }catch(e){} },
   shoot(){ this.play(150,'square',0.15,0.1); }, hit(){ this.play(60,'sawtooth',0.1,0.1); },
   correct(){ this.play(800,'square',0.1,0.1); setTimeout(()=>this.play(1200,'square',0.3,0.1),100); }, wrong(){ this.play(120,'sawtooth',0.4,0.3); },
-  unlock(){ this.play(600,'square',0.1,0.15); setTimeout(()=>this.play(800,'square',0.3,0.15),150); }
+  unlock(){ this.play(600,'square',0.1,0.15); setTimeout(()=>this.play(800,'square',0.3,0.15),150); },
+  victory() { this.play(523.25, 'square', 0.15, 0.1); setTimeout(() => this.play(659.25, 'square', 0.15, 0.1), 150); setTimeout(() => this.play(783.99, 'square', 0.3, 0.15), 300); },
+  gachaSR() { this.play(880, 'square', 0.1, 0.1); setTimeout(() => this.play(1108, 'square', 0.15, 0.1), 100); setTimeout(() => this.play(1318, 'square', 0.4, 0.15), 250); },
+  gachaR() { this.play(659.25, 'square', 0.1, 0.1); setTimeout(() => this.play(880, 'square', 0.2, 0.1), 100); }
 };
 const Vibrate = p => { try{ if(navigator.vibrate)navigator.vibrate(p); }catch(e){} };
 
-/* === Canvas & Responsive Layout === */
+/* === Canvas Layout === */
 const C={ bg:document.getElementById('bg-canvas'), gm:document.getElementById('game-canvas'), ui:document.getElementById('ui-canvas') };
 const CTX={ bg:C.bg.getContext('2d'), gm:C.gm.getContext('2d'), ui:C.ui.getContext('2d') };
 let GW=0, GH=0, gameW=0, gameH=0, loopId=null;
 
-function updateGameArea() {
-    if(!GW) return;
-    let qa = document.getElementById('qa-panel');
-    let app = document.getElementById('app');
-    if(Combat.active && qa) {
-        let isLandscape = window.innerWidth > window.innerHeight && window.innerWidth >= 500;
-        let qaRect = qa.getBoundingClientRect();
-        let appRect = app.getBoundingClientRect();
-        if(isLandscape) {
-            gameW = qaRect.left - appRect.left;
-            gameH = GH;
-        } else {
-            gameW = GW;
-            gameH = qaRect.top - appRect.top;
-        }
-    } else {
-        gameW = GW; gameH = GH;
-    }
-    if(gameW <= 0) gameW = GW;
-    if(gameH <= 0) gameH = GH;
-}
-
+function updateGameArea() { if(!GW) return; gameW = GW; gameH = GH; }
 const resize=()=>{ 
   const app = document.getElementById('app');
   const w=app.clientWidth, h=app.clientHeight, dpr=window.devicePixelRatio||1; 
   [C.bg,C.gm,C.ui].forEach(c=>{ c.width=w*dpr; c.height=h*dpr; }); 
   [CTX.bg,CTX.gm,CTX.ui].forEach(ctx=>{ ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(dpr,dpr); ctx.imageSmoothingEnabled=false; }); 
-  GW=w; GH=h;
-  updateGameArea();
+  GW=w; GH=h; updateGameArea();
 };
 window.addEventListener('resize',resize); new ResizeObserver(resize).observe(document.getElementById('app')); resize();
 
-/* --- Pixel Art Drawing Methods --- */
-function drawBackground(ctx, w, h, anim) {
-    ctx.fillStyle = '#0a0a1a'; ctx.fillRect(0,0,w,h);
-    ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)'; ctx.lineWidth = 2;
-    let scroll = (anim * 20) % 40;
-    for(let i = -40; i < w; i+=40) { ctx.beginPath(); ctx.moveTo(i+scroll, 0); ctx.lineTo(i+scroll, h); ctx.stroke(); }
-    for(let j = 0; j < h; j+=40) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(w, j); ctx.stroke(); }
+/* --- Pixel Art & Effects Methods --- */
+function drawBackground(ctx, w, h, anim, timeStop) {
+    ctx.fillStyle = timeStop ? '#00001a' : '#0a0a1a'; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = timeStop ? '#113' : '#334';
+    for(let i=0; i<30; i++) {
+        let spd = 20 + (i%3)*10, px = (i*87 + anim*spd) % w, py = (i*93) % h;
+        ctx.fillRect(px, py, (i%2)+1, (i%2)+1);
+    }
+    ctx.strokeStyle = timeStop ? 'rgba(0, 100, 255, 0.1)' : 'rgba(0, 255, 255, 0.05)'; 
+    ctx.lineWidth = 1; let scroll = (anim * 40) % 40; ctx.beginPath();
+    for(let i = -40; i < w; i+=40) { ctx.moveTo(i+scroll, 0); ctx.lineTo(i+scroll, h); }
+    for(let j = 0; j < h; j+=40) { ctx.moveTo(0, j); ctx.lineTo(w, j); }
+    ctx.stroke();
+    let groundY = h - 60; ctx.fillStyle = timeStop ? 'rgba(10, 10, 30, 0.9)' : 'rgba(20, 20, 40, 0.8)';
+    ctx.fillRect(0, groundY, w, 60); ctx.strokeStyle = timeStop ? 'rgba(0, 150, 255, 0.5)' : 'rgba(0, 255, 255, 0.3)';
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(w, groundY); ctx.stroke();
 }
 
 function drawMechaBase(ctx,x,y,hpRatio=1){ 
-    ctx.save(); ctx.translate(x,y); 
-    ctx.fillStyle='#333'; ctx.strokeStyle='#000'; ctx.lineWidth=4; 
-    ctx.fillRect(-30, -10, 60, 20); ctx.strokeRect(-30, -10, 60, 20);
-    ctx.fillStyle='#555'; ctx.fillRect(-20, -25, 40, 15); ctx.strokeRect(-20, -25, 40, 15);
-    ctx.fillStyle=hpRatio>0.3?'#0ff':'#f00'; ctx.fillRect(-10, -20, 20, 5);
-    ctx.restore(); 
+    ctx.save(); ctx.translate(x,y); ctx.shadowBlur = 10; ctx.shadowColor = '#000';
+    ctx.fillStyle='#223'; ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.fillRect(-30, -10, 60, 20); ctx.strokeRect(-30, -10, 60, 20);
+    ctx.fillStyle='#445'; ctx.fillRect(-20, -25, 40, 15); ctx.strokeRect(-20, -25, 40, 15);
+    ctx.shadowBlur = 0; ctx.fillStyle=hpRatio>0.3?'#0ff':'#f00'; ctx.fillRect(-10, -20, 20, 5); ctx.restore(); 
 }
 
 function drawTurretGun(ctx,tid,x,y,angle,recoil,scale=1){ 
     const def=TURRETS_DB[tid] || TURRETS_DB[0]; 
     ctx.save(); ctx.translate(x,y); ctx.rotate(angle); ctx.scale(scale,scale); 
-    ctx.fillStyle='#444'; ctx.strokeStyle='#000'; ctx.lineWidth=4; 
-    ctx.fillRect(-15,-15,30,30); ctx.strokeRect(-15,-15,30,30); 
-    ctx.fillStyle=def.clr; 
-    for(let i=0;i<def.b;i++){ 
-        let by=(i-(def.b-1)/2)*10; 
-        ctx.fillRect(15-recoil,by-5,25,10); ctx.strokeRect(15-recoil,by-5,25,10); 
-    } 
+    ctx.shadowBlur = 5; ctx.shadowColor = '#000'; ctx.fillStyle='#334'; ctx.strokeStyle='#000'; ctx.lineWidth=3; 
+    ctx.fillRect(-15,-15,30,30); ctx.strokeRect(-15,-15,30,30); ctx.fillStyle=def.clr; 
+    for(let i=0;i<def.b;i++){ let by=(i-(def.b-1)/2)*10; ctx.fillRect(15-recoil,by-5,25,10); ctx.strokeRect(15-recoil,by-5,25,10); } 
     ctx.restore(); 
 }
 
-function drawMonster(ctx,def,x,y,anim,enrage,curHp,maxHp){ 
-    ctx.save(); ctx.translate(x,y + Math.sin(anim*10)*(def.type==='swift'?4:2)); 
-    ctx.fillStyle=def.clr; ctx.strokeStyle='#000'; ctx.lineWidth=4; 
-    let s = def.size;
-    if(def.type==='swift'){ 
-        ctx.beginPath(); ctx.moveTo(-s,-s/2); ctx.lineTo(s,0); ctx.lineTo(-s,s/2); ctx.closePath(); 
-        ctx.fill(); ctx.stroke(); 
-    }else{ 
-        ctx.fillRect(-s/2, -s, s, s*1.5); ctx.strokeRect(-s/2, -s, s, s*1.5); 
-    } 
-    // Eye
-    ctx.fillStyle='#fff'; ctx.fillRect(s/4, -s/4, s/3, s/3); 
-    ctx.fillStyle=enrage>0?'#f00':'#000'; ctx.fillRect(s/4+2, -s/4+2, s/6, s/6); 
+/* === 像素渲染引擎 (Procedural Pixel Art Engine) === */
+function drawDetailedSlime(ctx, size, time, isHit) {
+  ctx.save();
+  if (isHit) ctx.filter = 'brightness(3) contrast(0)';
+  
+  // 1. 腳下動態陰影
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.beginPath();
+  ctx.ellipse(0, size / 2 - 2, size * 0.4, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. 果凍擠壓拉伸動畫 (Squish & Stretch)
+  const squish = Math.sin(time * 0.01) * 0.12;
+  ctx.scale(1 + squish, 1 - squish);
+
+  // 3. 史萊姆本體 (多重漸層像素感)
+  const radius = size / 2;
+  ctx.fillStyle = '#2ecc71';
+  ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = '#a3e4d7';
+  ctx.beginPath(); ctx.arc(-radius * 0.3, -radius * 0.3, radius * 0.35, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = '#27ae60';
+  ctx.beginPath(); ctx.arc(0, radius * 0.2, radius * 0.8, 0, Math.PI); ctx.fill();
+
+  // 4. 點綴亮黑眼珠與高光點
+  ctx.fillStyle = '#1b263b';
+  ctx.fillRect(-radius * 0.4, -radius * 0.1, 4, 6);
+  ctx.fillRect(radius * 0.1, -radius * 0.1, 4, 6);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-radius * 0.4 + 1, -radius * 0.1, 2, 2);
+  ctx.fillRect(radius * 0.1 + 1, -radius * 0.1, 2, 2);
+  ctx.restore();
+}
+
+function drawDetailedGoblin(ctx, size, time, isHit) {
+    ctx.save();
+    if (isHit) ctx.filter = 'brightness(3) contrast(0)';
+    // 陰影
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.beginPath(); ctx.ellipse(0, size / 2 - 2, size * 0.4, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+    // 急速奔跑殘影/抖動
+    const jitterX = (Math.random()-0.5)*4;
+    const jitterY = Math.abs(Math.sin(time*0.05))*4;
+    ctx.translate(jitterX, -jitterY);
+
+    let r = size/2;
+    // 身體
+    ctx.fillStyle = '#27ae60'; ctx.fillRect(-r*0.6, -r*0.5, r*1.2, r);
+    // 紅色圍巾
+    ctx.fillStyle = '#c0392b'; ctx.fillRect(-r*0.7, -r*0.1, r*1.4, r*0.3);
+    // 尖耳朵
+    ctx.fillStyle = '#2ecc71';
+    ctx.beginPath(); ctx.moveTo(-r*0.6, -r*0.3); ctx.lineTo(-r*1.2, -r*0.6); ctx.lineTo(-r*0.6, 0); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(r*0.6, -r*0.3); ctx.lineTo(r*1.2, -r*0.6); ctx.lineTo(r*0.6, 0); ctx.fill();
+    // 眼睛
+    ctx.fillStyle = '#000'; ctx.fillRect(-r*0.4, -r*0.3, 3, 3); ctx.fillRect(r*0.1, -r*0.3, 3, 3);
+    // 雙匕首
+    ctx.fillStyle = '#bdc3c7'; ctx.fillRect(-r*0.9, r*0.2, 4, 8); ctx.fillRect(r*0.7, r*0.2, 4, 8);
+    ctx.restore();
+}
+
+function drawDetailedSkeleton(ctx, size, time, isHit) {
+    ctx.save();
+    if (isHit) ctx.filter = 'brightness(3) contrast(0)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.beginPath(); ctx.ellipse(0, size / 2 - 2, size * 0.5, 5, 0, 0, Math.PI * 2); ctx.fill();
+
+    const bob = Math.abs(Math.sin(time*0.005))*4;
+    ctx.translate(0, -bob);
+
+    let r = size/2;
+    // 骨架
+    ctx.fillStyle = '#ecf0f1'; ctx.fillRect(-r*0.4, -r*0.8, r*0.8, r*1.5);
+    ctx.fillStyle = '#bdc3c7'; ctx.fillRect(-r*0.3, -r*0.4, r*0.6, r*0.8); // 肋骨陰影
+    // 鐵盔
+    ctx.fillStyle = '#7f8c8d'; ctx.fillRect(-r*0.6, -r*1.2, r*1.2, r*0.8);
+    ctx.fillStyle = '#2c3e50'; ctx.fillRect(-r*0.6, -r*0.6, r*1.2, r*0.2); // 面罩縫隙
+    ctx.fillStyle = '#e74c3c'; ctx.fillRect(-r*0.3, -r*0.6, 3, 3); // 紅眼
+    // 大盾牌 (金屬與高光)
+    ctx.fillStyle = '#95a5a6'; ctx.fillRect(-r*1.2, -r*0.2, r*0.6, r*1.6);
+    ctx.strokeStyle = '#f1c40f'; ctx.lineWidth=2; ctx.strokeRect(-r*1.2, -r*0.2, r*0.6, r*1.6);
+    ctx.restore();
+}
+
+function drawDetailedGargoyle(ctx, size, time, isHit) {
+    ctx.save();
+    if (isHit) ctx.filter = 'brightness(3) contrast(0)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; // 飛行怪物陰影較淡
+    ctx.beginPath(); ctx.ellipse(0, size / 2 + 10, size * 0.4, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+    // 拍翅懸浮
+    const hover = Math.sin(time*0.005)*10;
+    ctx.translate(0, hover);
+
+    let r = size/2;
+    // 翅膀 (0.2秒張合)
+    const flap = Math.abs(Math.sin(time*0.015)) * Math.PI/3;
+    ctx.fillStyle = '#7f8c8d';
+    ctx.save(); ctx.translate(-r*0.5, -r*0.5); ctx.rotate(-flap); ctx.fillRect(-r*1.5, -r*0.2, r*1.5, r*0.8); ctx.restore();
+    ctx.save(); ctx.translate(r*0.5, -r*0.5); ctx.rotate(flap); ctx.fillRect(0, -r*0.2, r*1.5, r*0.8); ctx.restore();
     
-    // HP Bar
+    // 身體
+    ctx.fillStyle = '#95a5a6'; ctx.fillRect(-r*0.6, -r, r*1.2, r*1.6);
+    ctx.fillStyle = '#34495e'; ctx.fillRect(-r*0.4, -r*0.2, r*0.8, r*0.8); // 腹部
+    
+    // 紅光發光眼珠
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = '#e74c3c'; ctx.shadowBlur = 10; ctx.shadowColor = '#e74c3c';
+    ctx.fillRect(-r*0.3, -r*0.6, 4, 4); ctx.fillRect(r*0.1, -r*0.6, 4, 4);
+    ctx.restore();
+}
+
+function drawDetailedDragon(ctx, size, time, hpRatio, isHit) {
+    ctx.save();
+    if (isHit) ctx.filter = 'brightness(3) contrast(0)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.beginPath(); ctx.ellipse(0, size / 2 - 2, size * 0.7, 8, 0, 0, Math.PI * 2); ctx.fill();
+
+    const isEnraged = hpRatio <= 0.5;
+    const bob = Math.sin(time*0.003)*5;
+    ctx.translate(0, bob);
+
+    let r = size/2;
+    // 龍身與鱗片
+    ctx.fillStyle = '#2c3e50'; ctx.fillRect(-r, -r*1.5, r*2, r*2.5);
+    ctx.fillStyle = '#8e44ad'; ctx.fillRect(-r*0.8, -r*1.3, r*1.6, r*2.1); 
+    
+    // 金黃龍角
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath(); ctx.moveTo(-r*0.5, -r*1.5); ctx.lineTo(-r*1.2, -r*2.5); ctx.lineTo(-r*0.2, -r*1.5); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(r*0.5, -r*1.5); ctx.lineTo(r*1.2, -r*2.5); ctx.lineTo(r*0.2, -r*1.5); ctx.fill();
+    
+    // 眼睛 (狂暴變紅)
+    ctx.fillStyle = isEnraged ? '#ff0000' : '#f1c40f';
+    ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
+    ctx.fillRect(-r*0.6, -r*1.0, 6, 6); ctx.fillRect(r*0.3, -r*1.0, 6, 6);
+    
+    // 龍息預告與胸口核心閃爍
+    const corePulse = isEnraged ? Math.abs(Math.sin(time*0.015)) : Math.abs(Math.sin(time*0.005));
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = `rgba(231, 76, 60, ${0.5 + corePulse*0.5})`;
+    ctx.shadowBlur = 20; ctx.shadowColor = '#e74c3c';
+    ctx.beginPath(); ctx.arc(0, -r*0.2, r*0.5, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+}
+
+// 核心渲染切換
+function drawMonster(ctx, def, x, y, anim, enrage, curHp, maxHp, hitFlash){ 
+    ctx.save(); ctx.translate(x, y);
+    let time = anim * 1000;
+    let isHit = hitFlash > 0;
+
+    if (def.archetype === 'slime') drawDetailedSlime(ctx, def.size, time, isHit);
+    else if (def.archetype === 'goblin') drawDetailedGoblin(ctx, def.size, time, isHit);
+    else if (def.archetype === 'skeleton') drawDetailedSkeleton(ctx, def.size, time, isHit);
+    else if (def.archetype === 'gargoyle') drawDetailedGargoyle(ctx, def.size, time, isHit);
+    else if (def.archetype === 'dragon') drawDetailedDragon(ctx, def.size, time, curHp/maxHp, isHit);
+
+    // HP Bar UI
+    let s = def.size;
     let hpRatio = Math.max(0, curHp/maxHp);
-    ctx.fillStyle='#000'; ctx.fillRect(-s/2, -s - 15, s, 8);
-    ctx.fillStyle=hpRatio>0.5?'#0f0':(hpRatio>0.2?'#ff0':'#f00');
-    ctx.fillRect(-s/2+2, -s - 13, (s-4)*hpRatio, 4);
+    ctx.shadowBlur = 0; ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle='#000'; ctx.fillRect(-s/2, -s/2 - 20, s, 6);
+    ctx.fillStyle=hpRatio>0.5?'#0f0':(hpRatio>0.2?'#ff0':'#f00'); 
+    ctx.fillRect(-s/2+1, -s/2 - 19, (s-2)*hpRatio, 4);
     ctx.restore(); 
 }
 
@@ -459,26 +621,25 @@ class Particle {
     constructor(x,y,vx,vy,clr,life){this.x=x;this.y=y;this.vx=vx;this.vy=vy;this.clr=clr;this.life=life;this.maxLife=life;} 
     update(dt){this.x+=this.vx*dt;this.y+=this.vy*dt;this.life-=dt;} 
     draw(ctx){
-        ctx.globalAlpha=Math.max(0,this.life/this.maxLife); 
-        ctx.fillStyle=this.clr; 
+        ctx.save(); ctx.globalAlpha=Math.max(0,this.life/this.maxLife); 
+        ctx.globalCompositeOperation = 'lighter'; // Juice: 發光粒子
+        ctx.fillStyle=this.clr; ctx.shadowBlur=10; ctx.shadowColor=this.clr;
         let s = Math.max(2, 6*(this.life/this.maxLife));
         ctx.fillRect(this.x-s/2, this.y-s/2, s, s);
-        ctx.globalAlpha=1;
+        ctx.restore();
     } 
 }
 
 class FloatingText {
     constructor(x, y, text, color, scale=1.0) {
         this.x = x + (Math.random()-0.5)*30; this.y = y + (Math.random()-0.5)*20;
-        this.text = text; this.color = color;
-        this.life = 1.0; this.maxLife = 1.0;
-        this.vy = 40 + Math.random()*30;
-        this.scale = scale;
+        this.text = text; this.color = color; this.life = 1.0; this.maxLife = 1.0;
+        this.vy = 40 + Math.random()*30; this.scale = scale;
     }
     update(dt) { this.y -= this.vy * dt; this.life -= dt; }
     draw(ctx) {
         ctx.save(); ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
-        ctx.fillStyle = this.color; ctx.font = \`bold \${Math.floor(24 * this.scale)}px 'VT323', monospace\`;
+        ctx.fillStyle = this.color; ctx.font = `bold ${Math.floor(24 * this.scale)}px 'VT323', monospace`;
         ctx.textAlign = 'center'; ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
         ctx.strokeText(this.text, this.x, this.y); ctx.fillText(this.text, this.x, this.y);
         ctx.restore();
@@ -488,37 +649,40 @@ class FloatingText {
 class Projectile {
   constructor(x,y,tx,ty,clr,dmg,isEnemy=false,type='kinetic',bounces=0, isCrit=false){
     this.x=x;this.y=y;this.dmg=dmg;this.clr=clr;this.isEnemy=isEnemy;this.active=true;this.type=type;this.bounces=bounces;this.isCrit=isCrit;
-    this.life = type==='super_laser'?0.5:10.0;
-    let dx=tx-x, dy=ty-y; let dist=Math.hypot(dx,dy)||1; let spd=isEnemy?150:800; 
+    this.life = type==='super_laser'?0.5:5.0; this.history = [];
+    let dx=tx-x, dy=ty-y; let dist=Math.hypot(dx,dy)||1; let spd=isEnemy?150:1000; 
     this.vx=(dx/dist)*spd; this.vy=(dy/dist)*spd;
   }
   update(dt){
     this.life-=dt; if(this.life<=0){this.active=false;return;}
+    this.history.push({x:this.x, y:this.y}); if(this.history.length>6) this.history.shift();
     if(this.type!=='super_laser'){ this.x+=this.vx*dt; this.y+=this.vy*dt; }
     if((this.x<0||this.x>gameW+100||this.y<0||this.y>gameH) && this.type !== 'super_laser') this.active=false;
   }
   draw(ctx){ 
+      ctx.save(); ctx.shadowBlur = 15; ctx.shadowColor = this.clr; ctx.globalCompositeOperation = 'lighter';
       if(this.type === 'super_laser') {
           ctx.strokeStyle = this.clr; ctx.lineWidth = 40 * (this.life/0.5); ctx.lineCap='butt';
-          ctx.beginPath(); ctx.moveTo(gameW*0.1, gameH-40); ctx.lineTo(gameW, this.y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(gameW*0.1, gameH-60); ctx.lineTo(gameW, this.y); ctx.stroke();
           ctx.strokeStyle = '#fff'; ctx.lineWidth = 15 * (this.life/0.5); ctx.stroke();
-      } else if(this.type === 'laser') {
-          ctx.strokeStyle = this.clr; ctx.lineWidth = 8;
-          ctx.beginPath(); ctx.moveTo(this.x - this.vx*0.05, this.y - this.vy*0.05); ctx.lineTo(this.x, this.y); ctx.stroke();
-          ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.stroke();
-      } else { 
-          ctx.fillStyle=this.clr; ctx.fillRect(this.x-6,this.y-6,12,12); 
-      } 
+      } else if(this.history.length > 1) {
+          ctx.strokeStyle = this.clr; ctx.lineWidth = this.isCrit ? 8 : 5; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(this.history[0].x, this.history[0].y);
+          for(let i=1; i<this.history.length; i++) ctx.lineTo(this.history[i].x, this.history[i].y);
+          ctx.stroke();
+          ctx.fillStyle = '#fff'; ctx.fillRect(this.x-2, this.y-2, 4, 4);
+      } else { ctx.fillStyle=this.clr; ctx.fillRect(this.x-6,this.y-6,12,12); } 
+      ctx.restore();
   }
 }
 
 let Env = { 
     particles:[], projs:[], enemies:[], texts:[], 
-    spawnExplosion(x,y,clr,count=8,size=1){ 
+    spawnExplosion(x,y,clr,count=12,size=1){ 
         for(let i=0;i<count;i++){ 
-            if(this.particles.length>100)this.particles.shift(); 
-            let a=Math.random()*Math.PI*2,v=(Math.random()*50+30)*size; 
-            this.particles.push(new Particle(x,y,Math.cos(a)*v,Math.sin(a)*v,clr,0.4*size)); 
+            if(this.particles.length>150)this.particles.shift(); 
+            let a=Math.random()*Math.PI*2,v=(Math.random()*80+40)*size; 
+            this.particles.push(new Particle(x,y,Math.cos(a)*v,Math.sin(a)*v,clr,0.5*size)); 
         } 
     }, 
     clear(){this.particles=[];this.projs=[];this.enemies=[];this.texts=[];} 
@@ -526,113 +690,191 @@ let Env = {
 
 /* === Combat System === */
 let Combat = {
-  active:false, route:'', level:1, hp:100, maxHp:100, combo:0, feverTimer:0, overheatTimer:0, timeStopTimer:0, waveTot:0, waveSpawned:0, waveKilled:0, spawnTimer:0, qTimer:5, qMax:5, qActive:null, isAnswering:false, recoil:0, stats:{ansTot:0,ansCor:0}, startDexCount:0,
+  active:false, route:'', level:1, hp:100, maxHp:100, combo:0, feverTimer:0, overheatTimer:0, timeStopTimer:0, 
+  waveTot:0, waveSpawned:0, waveKilled:0, spawnTimer:0, qTimer:5, qMax:5, qActive:null, isAnswering:false, 
+  recoil:0, shake:0, energy:0, maxEnergy:100, stats:{ansTot:0,ansCor:0}, startDexCount:0, anim:0,
+  hitStopTimer:0, feverAutoTimer:0, hasShieldTriggered:false, shieldTimer:0, hasRevived:false,
+  
   start(route,level){ 
-      AudioSys.init(); this.active=true; this.route=route; this.level=level; this.hp=100; this.combo=0; this.feverTimer=0; this.overheatTimer=0; this.timeStopTimer=0; 
-      this.waveTot=10+Math.floor(level/3); this.waveSpawned=0; this.waveKilled=0; this.spawnTimer=0.1; this.stats={ansTot:0,ansCor:0}; this.isAnswering=false; 
-      this.startDexCount = State.dex.length; Env.clear(); 
-      document.getElementById('combat-stage-info').textContent=\`\${route==='vocab'?'單字':'文法'} 第 \${level} 關\`; 
-      UI.showCombat(); 
-      setTimeout(()=>updateGameArea(), 50); // Ensure bounds are correct after UI switch
-      this.nextQ(); 
+      AudioSys.init(); this.active=true; this.route=route; this.level=level; this.hp=100; this.combo=0; 
+      this.feverTimer=0; this.overheatTimer=0; this.timeStopTimer=0; this.energy=0; this.shake=0; this.hitStopTimer=0;
+      this.hasShieldTriggered=false; this.shieldTimer=0; this.hasRevived=false;
+      this.waveTot=10+Math.floor(level/3); this.waveSpawned=0; this.waveKilled=0; this.spawnTimer=0.1; 
+      this.stats={ansTot:0,ansCor:0}; this.isAnswering=false; this.startDexCount = State.dex.length; 
+      Env.clear(); document.getElementById('combat-hp-shield').style.display = 'none';
+      document.getElementById('combat-stage-info').textContent=`${route==='vocab'?'單字':'文法'} 第 ${level} 關`; 
+      UI.showCombat(); setTimeout(()=>updateGameArea(), 50); this.nextQ(); 
   },
   nextQ(){ 
       this.isAnswering=false; let diff=this.level<=30?1:(this.level<=70?2:3); 
-      let pool=QUESTIONS_DB.filter(q=>q.route===this.route&&q.diff===diff); if(pool.length===0)pool=QUESTIONS_DB; 
-      let q=pool[Math.floor(Math.random()*pool.length)]; let arr=[0,1,2,3]; 
+      let pool=QUESTIONS_DB.filter(q=>q.route===this.route&&q.diff===diff); 
+      if(pool.length===0) pool=QUESTIONS_DB.filter(q=>q.route===this.route); 
+      
+      let weightedPool = [];
+      pool.forEach(q => {
+          let weight = State.mistakes.find(m => m.q === q.q) ? 3 : 1;
+          for(let w=0; w<weight; w++) weightedPool.push(q);
+      });
+
+      let q=weightedPool[Math.floor(Math.random()*weightedPool.length)]; let arr=[0,1,2,3]; 
       for(let i=3;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];} 
       this.qActive={...q,shuffledIdx:arr}; this.qTimer=this.qMax=5; document.getElementById('qa-q').textContent=q.q; 
-      arr.forEach((origIdx,i)=>{ let btn=document.getElementById(\`qa-\${i}\`); btn.textContent=q.opts[origIdx]; btn.className='opt-btn'; }); 
+      arr.forEach((origIdx,i)=>{ 
+          let btn=document.getElementById(`qa-${i}`); 
+          btn.textContent=q.opts[origIdx]; btn.className='opt-btn'; 
+      }); 
+  },
+  trigger5050() {
+      let wrongIndices = [];
+      this.qActive.shuffledIdx.forEach((origIdx, i) => { if(origIdx !== this.qActive.ans) wrongIndices.push(i); });
+      for(let k=0; k<2; k++) {
+          let r = Math.floor(Math.random() * wrongIndices.length);
+          document.getElementById(`qa-${wrongIndices[r]}`).classList.add('hidden-5050');
+          wrongIndices.splice(r, 1);
+      }
+      document.getElementById('combat-hp-shield').style.display = 'block';
+  },
+  revive() {
+      if(State.coins < 200) { alert("鑽石不足！"); return; }
+      State.coins -= 200; SaveSys.save(); UI.updateBadges(); UI.closeModal('modal-revive');
+      this.hp = 100; this.hasRevived = true; this.active = true;
+      Env.enemies.forEach(e=>{e.curHp-=9999; e.effects.hitFlash=1.0;}); 
+      Env.spawnExplosion(gameW/2, gameH/2, '#fa0', 100, 8); this.shake=2.0; AudioSys.shoot(); Vibrate(500);
+      this.nextQ();
+  },
+  endGame(win) {
+      this.active = false; UI.closeAll(); UI.showResult(win);
   },
   answer(btnIdx){
     if(!this.active||this.isAnswering||this.overheatTimer>0)return; this.isAnswering=true; AudioSys.init();
     let q=this.qActive, origIdx=btnIdx>=0?q.shuffledIdx[btnIdx]:-1, isCor=origIdx===q.ans, tTaken=5-this.qTimer; this.stats.ansTot++;
     if(isCor){
-      this.stats.ansCor++; if(btnIdx>=0)document.getElementById(\`qa-\${btnIdx}\`).classList.add('correct'); AudioSys.correct();
-      let crit=tTaken<=2; Vibrate(crit?[40,30,60]:30); this.combo++; if(this.combo>=5&&tTaken<=3)this.feverTimer=5;
+      this.stats.ansCor++; if(btnIdx>=0)document.getElementById(`qa-${btnIdx}`).classList.add('correct'); AudioSys.correct();
+      let crit = (tTaken<=1.5 || this.feverTimer > 0); Vibrate(crit?[40,30,60]:30); this.combo++; if(this.combo>=5&&tTaken<=3)this.feverTimer=5;
+      this.energy = Math.min(this.maxEnergy, this.energy + (crit? 15 : 10));
+      
       let tDef=TURRETS_DB[State.equippedTurret] || TURRETS_DB[0], tLvl=State.turretLvls[State.equippedTurret] || 1;
-      let dmg=(10+tLvl*5)*(crit?2:1)*(this.hp<=20?2.5:1); this.recoil=15;
+      let dmg=(10+tLvl*5)*(crit?2:1)*(this.hp<=20?2.5:1); this.recoil=15; this.shake=crit?0.3:0.1;
+      this.hitStopTimer = crit ? 0.05 : 0; 
       
       let ep=Env.projs.find(p=>p.isEnemy);
       if(ep){ ep.active=false; Env.spawnExplosion(ep.x,ep.y,'#f0f'); AudioSys.shoot(); }
       else if(Env.enemies.length>0){
-        let tgt=Env.enemies[0];
-        let px = gameW*0.1, py = gameH-40;
-        if(tDef.type==='scatter') for(let s=-1;s<=1;s++) Env.projs.push(new Projectile(px, py, tgt.x, tgt.y+s*50, tDef.clr, dmg/2, false, tDef.type, 0, crit));
+        let tgt=Env.enemies[0]; let px = gameW*0.1, py = gameH-60;
+        if(tDef.type==='scatter') for(let s=-1;s<=1;s++) Env.projs.push(new Projectile(px, py, tgt.x, tgt.y+s*80, tDef.clr, dmg/2, false, tDef.type, 0, crit));
         else if(tDef.type==='chain') Env.projs.push(new Projectile(px, py, tgt.x, tgt.y, tDef.clr, dmg, false, 'chain', 3, crit));
         else if(tDef.type==='super_laser') {
             Env.projs.push(new Projectile(px, py, tgt.x, tgt.y, tDef.clr, dmg*3, false, 'super_laser', 0, crit));
-            Env.enemies.forEach(e => {
-                e.curHp -= (dmg*3);
-                Env.texts.push(new FloatingText(e.x, e.y-e.size, Math.floor(dmg*3), crit ? '#ff0' : '#fff', crit ? 1.5 : 1.0));
-            });
+            Env.enemies.forEach(e => { e.curHp -= (dmg*3); e.effects.hitFlash=0.1; Env.texts.push(new FloatingText(e.x, e.y-e.size, Math.floor(dmg*3), crit ? '#ff0' : '#fff', crit ? 1.5 : 1.0)); }); this.shake=0.8;
         }
         else Env.projs.push(new Projectile(px, py, tgt.x, tgt.y, tDef.clr, dmg, false, tDef.type, 0, crit));
         AudioSys.shoot();
       }
       setTimeout(()=>{if(this.active)this.nextQ();},300);
     }else{
-      if(btnIdx>=0)document.getElementById(\`qa-\${btnIdx}\`).classList.add('wrong'); let corBtnIdx=q.shuffledIdx.indexOf(q.ans); if(corBtnIdx>=0)document.getElementById(\`qa-\${corBtnIdx}\`).classList.add('correct');
-      AudioSys.wrong(); Vibrate(150); this.combo=0; this.overheatTimer=1; document.getElementById('overheat-overlay').style.display='block'; setTimeout(()=>document.getElementById('overheat-overlay').style.display='none',300);
+      if(btnIdx>=0)document.getElementById(`qa-${btnIdx}`).classList.add('wrong'); let corBtnIdx=q.shuffledIdx.indexOf(q.ans); if(corBtnIdx>=0)document.getElementById(`qa-${corBtnIdx}`).classList.add('correct');
+      AudioSys.wrong(); Vibrate(150); this.combo=0; this.shake=0.5; this.overheatTimer=1; document.getElementById('overheat-overlay').style.display='block'; setTimeout(()=>document.getElementById('overheat-overlay').style.display='none',300);
       Env.enemies.forEach(e=>e.enrage=1.5);
       if(!State.mistakes.find(m=>m.q===q.q)){ State.mistakes.push({q:q.q,ans:q.opts[q.ans],exp:q.exp}); SaveSys.save(); }
       setTimeout(()=>{if(this.active)this.nextQ();},1000);
     }
   },
+  useSkill(type) {
+      if(!this.active || this.overheatTimer>0) return;
+      if(type===1 && this.energy>=30) { this.energy-=30; this.hp=Math.min(100, this.hp+40); Env.spawnExplosion(gameW*0.1, gameH-60, '#0f0', 30, 2); AudioSys.unlock?.(); Vibrate(100); }
+      else if(type===2 && this.energy>=50) { this.energy-=50; this.timeStopTimer=5; Env.spawnExplosion(gameW/2, gameH/2, '#0ff', 50, 3); AudioSys.unlock?.(); Vibrate(200); this.shake=0.5; }
+      else if(type===3 && this.energy>=100) { this.energy-=100; Env.enemies.forEach(e=>{e.curHp-=300; e.effects.hitFlash=0.3; e.x+=30;}); Env.spawnExplosion(gameW/2, gameH/2, '#fa0', 80, 5); this.shake=1.5; AudioSys.shoot?.(); Vibrate(400); }
+  },
   update(dt){
     if(!this.active)return;
-    if(this.recoil>0)this.recoil=Math.max(0,this.recoil-dt*100); if(this.feverTimer>0)this.feverTimer-=dt; document.getElementById('fever-text').style.display=this.feverTimer>0?'block':'none';
-    if(this.overheatTimer>0) this.overheatTimer-=dt; else if(!this.isAnswering){ this.qTimer-=dt; if(this.qTimer<=0)this.answer(-1); }
+    if(this.hitStopTimer > 0) { this.hitStopTimer -= dt; return; }
+    this.anim+=dt;
+    if(this.recoil>0)this.recoil=Math.max(0,this.recoil-dt*100); 
+    if(this.shake>0)this.shake-=dt;
     
+    // FEVER Mode 火力狂暴機制
+    if(this.feverTimer>0) {
+        this.feverTimer-=dt; document.getElementById('fever-text').style.display='block';
+        this.feverAutoTimer -= dt;
+        if(this.feverAutoTimer <= 0 && Env.enemies.length > 0) {
+            this.feverAutoTimer = 0.33; // 300% 速度自動開火
+            let tgt = Env.enemies[0], px = gameW*0.1, py = gameH-60;
+            Env.projs.push(new Projectile(px, py, tgt.x, tgt.y, '#fa0', 50, false, 'super_laser', 0, true));
+            Env.enemies.forEach(e => { e.curHp -= 50; e.effects.hitFlash=0.1; Env.texts.push(new FloatingText(e.x, e.y-e.size, 50, '#ff0', 1.5)); }); 
+            this.shake = 0.5; AudioSys.shoot();
+        }
+    } else { document.getElementById('fever-text').style.display='none'; }
+
+    if(this.overheatTimer>0) this.overheatTimer-=dt; else if(!this.isAnswering){ this.qTimer-=dt; if(this.qTimer<=0)this.answer(-1); }
+    if(this.shieldTimer>0) { this.shieldTimer-=dt; if(this.shieldTimer<=0) document.getElementById('combat-hp-shield').style.display = 'none'; }
+    
+    if(this.timeStopTimer>0) { this.timeStopTimer -= dt; Env.particles.forEach(p=>p.update(dt*0.1)); Env.texts.forEach(t=>t.update(dt)); return; }
+
     this.spawnTimer-=dt; 
     if(this.waveSpawned<this.waveTot&&this.spawnTimer<=0){ 
         this.spawnTimer=1.5; this.waveSpawned++; 
         let mIdx=Math.floor(Math.random()*MONSTERS_DB.length); 
         if(!State.dex) State.dex = [];
-        if(!State.dex.includes(mIdx)){
-            State.dex.push(mIdx); SaveSys.save(); UI.updateBadges();
-            UI.showNewMonsterAnim(MONSTERS_DB[mIdx]);
-        } 
+        if(!State.dex.includes(mIdx)){ State.dex.push(mIdx); SaveSys.save(); UI.updateBadges(); UI.showNewMonsterAnim(MONSTERS_DB[mIdx]); } 
         let hp = MONSTERS_DB[mIdx].hp*(1+this.level*0.05);
-        Env.enemies.push({...MONSTERS_DB[mIdx],x:gameW+50,y:gameH-40-(Math.random()*60),anim:0,curHp:hp,maxHp:hp,enrage:0, effects:{burn:0, poison:0}}); 
+        Env.enemies.push({...MONSTERS_DB[mIdx],x:gameW+50,y:gameH-60-(Math.random()*80),anim:0,curHp:hp,maxHp:hp,enrage:0, effects:{burn:0, poison:0, frozen:0, hitFlash:0}}); 
     }
     
     for(let i=Env.enemies.length-1;i>=0;i--){
       let e=Env.enemies[i];
-      e.anim+=dt; if(e.enrage>0)e.enrage-=dt; 
-      
-      // Status effects
-      if(e.effects.burn > 0) { let d=10*dt; e.curHp -= d; e.effects.burn -= dt; if(Math.random()<0.1) Env.texts.push(new FloatingText(e.x, e.y, Math.floor(d*10), '#f50', 0.8)); Env.spawnExplosion(e.x, e.y, '#f50', 1, 0.5); }
-      if(e.effects.poison > 0) { let d=5*dt; e.curHp -= d; e.effects.poison -= dt; e.spd *= 0.9; if(Math.random()<0.1) Env.texts.push(new FloatingText(e.x, e.y, Math.floor(d*10), '#a0f', 0.8)); Env.spawnExplosion(e.x, e.y, '#a0f', 1, 0.5); }
+      e.anim+=dt; if(e.enrage>0)e.enrage-=dt; if(e.effects.hitFlash>0)e.effects.hitFlash-=dt;
+      if(e.effects.frozen > 0) e.effects.frozen -= dt;
+      if(e.effects.burn > 0) { e.curHp -= 10*dt; e.effects.burn -= dt; if(Math.random()<0.1) Env.spawnExplosion(e.x, e.y, '#f50', 1, 0.5); }
+      if(e.effects.poison > 0) { e.curHp -= 5*dt; e.effects.poison -= dt; if(Math.random()<0.1) Env.spawnExplosion(e.x, e.y, '#a0f', 1, 0.5); }
 
       if(e.curHp <= 0) {
           Env.enemies.splice(i,1); this.waveKilled++; AudioSys.hit(); 
+          
+          // 死亡彩屑機制：依照怪物類型噴出對應碎片
+          let dClr = e.clr;
+          if (e.archetype === 'slime') dClr = '#2ecc71';
+          else if (e.archetype === 'skeleton') dClr = '#ecf0f1';
+          else if (e.archetype === 'gargoyle') dClr = '#95a5a6';
+          Env.spawnExplosion(e.x, e.y, dClr, 20, 1.5);
+          
           let tDef=TURRETS_DB[State.equippedTurret] || TURRETS_DB[0];
-          State.coins += (tDef.type === 'gold' ? 10 : 5); 
+          let coinGain = (tDef.type === 'gold' ? 10 : 5) * (this.feverTimer > 0 ? 3 : 1);
+          State.coins += coinGain; 
           continue;
       }
-
-      if(e.type==='boss'&&e.x<gameW-50&&Math.random()<0.005) Env.projs.push(new Projectile(e.x,e.y,gameW*0.1,gameH-40,'#f0f',20,true)); 
-      else e.x-=(e.spd*(e.enrage>0?1.5:1)*(e.frozen?0.5:1)*dt); 
       
-      if(e.x<gameW*0.1){ this.hp-=(e.type==='boss'?25:(e.type==='heavy'?15:5)); AudioSys.hit(); Vibrate(100); Env.spawnExplosion(gameW*0.1,e.y,e.clr); Env.enemies.splice(i,1); this.waveKilled++; }
+      let isDragonRage = (e.archetype === 'dragon' && e.curHp/e.maxHp <= 0.5);
+      let speedMult = (e.enrage>0 ? 1.5 : 1) * (e.effects.frozen>0 ? 0.5 : 1) * (isDragonRage ? 1.5 : 1);
+
+      if(e.type==='boss'&&e.x<gameW-50&&Math.random()<0.005) Env.projs.push(new Projectile(e.x,e.y,gameW*0.1,gameH-60,'#f0f',20,true)); 
+      else e.x-=(e.spd*speedMult*dt); 
+      
+      // 骷髏重步踏地微小塵土
+      if (e.archetype === 'skeleton' && Math.random()<0.05) Env.spawnExplosion(e.x, e.y + e.size/2, '#7f8c8d', 1, 0.3);
+
+      if(e.x<gameW*0.1){ 
+          if(this.shieldTimer <= 0) this.hp-=(e.type==='boss'?25:(e.type==='heavy'?15:5)); 
+          AudioSys.hit(); Vibrate(100); this.shake=0.5; Env.spawnExplosion(gameW*0.1,e.y,e.clr,20,2); Env.enemies.splice(i,1); this.waveKilled++; 
+      }
     }
     for(let i=Env.projs.length-1;i>=0;i--){
       let p=Env.projs[i]; p.update(dt); if(!p.active){Env.projs.splice(i,1);continue;}
-      if(p.isEnemy){ if(p.x<gameW*0.1){this.hp-=p.dmg;AudioSys.hit();Vibrate(100);Env.spawnExplosion(gameW*0.1,p.y,p.clr);p.active=false;} }
+      if(p.isEnemy){ if(p.x<gameW*0.1){ if(this.shieldTimer <= 0) this.hp-=p.dmg; AudioSys.hit(); Vibrate(100); this.shake=0.3; Env.spawnExplosion(gameW*0.1,p.y,p.clr); p.active=false;} }
       else if(p.type !== 'super_laser'){
         let hR=p.type==='blackhole'?40:20;
         for(let j=0;j<Env.enemies.length;j++){ let e=Env.enemies[j]; if(Math.hypot(p.x-e.x,p.y-e.y)<e.size+hR){
-          e.curHp-=p.dmg; Env.spawnExplosion(p.x,p.y,p.clr,4);
-          Env.texts.push(new FloatingText(e.x, e.y-e.size, Math.floor(p.dmg), p.isCrit?'#ff0':'#fff', p.isCrit?1.5:1.0));
+          // 骷髏重騎士盾牌減傷
+          let actualDmg = p.dmg;
+          if (e.archetype === 'skeleton' && p.type !== 'pierce' && p.type !== 'super_laser') actualDmg *= 0.5;
+          e.curHp -= actualDmg; 
           
-          if(p.type==='slow'||p.type==='aura_slow')e.frozen=true;
-          if(p.type==='burn') e.effects.burn = 3.0;
-          if(p.type==='poison') e.effects.poison = 5.0;
-
+          Env.spawnExplosion(p.x, p.y, e.clr, 4, 0.5); // 受擊噴濺 3~5 顆微小像素方塊
+          
+          e.effects.hitFlash = 0.05; e.x += p.isCrit ? 15 : 3; 
+          Env.texts.push(new FloatingText(e.x, e.y-e.size, Math.floor(actualDmg), p.isCrit?'#ff0':'#fff', p.isCrit?1.5:1.0));
+          if(p.type==='slow')e.effects.frozen=3.0; if(p.type==='burn') e.effects.burn = 3.0; if(p.type==='poison') e.effects.poison = 5.0;
           if(p.type!=='pierce'&&p.type!=='blackhole')p.active=false;
           if(p.type==='chain'&&p.bounces>0&&Env.enemies.length>1){ let nT=Env.enemies.find(ne=>ne!==e); if(nT)Env.projs.push(new Projectile(e.x,e.y,nT.x,nT.y,p.clr,p.dmg*0.8,false,'chain',p.bounces-1, p.isCrit)); }
-          
           if(!p.active)break;
         }}
       }
@@ -640,67 +882,115 @@ let Combat = {
     Env.particles.forEach(p=>p.update(dt)); Env.particles=Env.particles.filter(p=>p.life>0);
     Env.texts.forEach(t=>t.update(dt)); Env.texts = Env.texts.filter(t=>t.life>0);
     
-    if(this.hp<=0){ this.active=false; UI.showResult(false); }
-    else if(this.waveKilled>=this.waveTot){ this.active=false; State.coins+=100; if(this.route==='vocab'&&this.level===State.maxStageVocab)State.maxStageVocab++; if(this.route==='grammar'&&this.level===State.maxStageGrammar)State.maxStageGrammar++; SaveSys.save(); UI.showResult(true); }
+    // 絕境防護與復活機制
+    if(this.hp<=0) {
+        if(!this.hasShieldTriggered) {
+            this.hp = 1; this.hasShieldTriggered = true; this.shieldTimer = 5; this.trigger5050();
+        } else if(!this.hasRevived) {
+            this.active = false; UI.openModal('modal-revive');
+        } else {
+            this.endGame(false);
+        }
+    }
+    else if(this.waveKilled>=this.waveTot){ this.active=false; State.coins+=100; if(this.route==='vocab'&&this.level===State.maxStageVocab)State.maxStageVocab++; if(this.route==='grammar'&&this.level===State.maxStageGrammar)State.maxStageGrammar++; SaveSys.save(); this.endGame(true); }
   },
   draw(ctx){
     if(!this.active)return;
-    let hpBar=document.getElementById('combat-hp-fill'); hpBar.style.width=\`\${Math.max(0,this.hp)}%\`; hpBar.style.background=this.hp>50?'#f00':(this.hp>20?'#ff0':'#f00'); document.getElementById('combat-enemies').textContent=\`剩餘: \${this.waveTot-this.waveKilled}\`;
-    let tBar=document.getElementById('qa-timer'); tBar.style.width=\`\${(Math.max(0,this.qTimer)/this.qMax)*100}%\`; tBar.style.background=this.overheatTimer>0?'var(--err)':'var(--p-color)';
+    document.getElementById('combat-hp-fill').style.width=`${Math.max(0,this.hp)}%`; document.getElementById('combat-hp-fill').style.background=this.hp>50?'#f00':(this.hp>20?'#ff0':'#f00'); document.getElementById('combat-enemies').textContent=`剩餘: ${this.waveTot-this.waveKilled}`;
+    document.getElementById('qa-timer').style.width=`${(Math.max(0,this.qTimer)/this.qMax)*100}%`; document.getElementById('qa-timer').style.background=this.overheatTimer>0?'var(--err)':'var(--p-color)';
+    document.getElementById('ep-bar-1').style.width=`${Math.min(100, (this.energy/30)*100)}%`; document.getElementById('skill-1').className = this.energy>=30?'skill-btn ready':'skill-btn';
+    document.getElementById('ep-bar-2').style.width=`${Math.min(100, (this.energy/50)*100)}%`; document.getElementById('skill-2').className = this.energy>=50?'skill-btn ready':'skill-btn';
+    document.getElementById('ep-bar-3').style.width=`${Math.min(100, (this.energy/100)*100)}%`; document.getElementById('skill-3').className = this.energy>=100?'skill-btn ready':'skill-btn';
+
+    ctx.save();
+    if(this.shake > 0) { let sx = (Math.random()-0.5)*30*this.shake; let sy = (Math.random()-0.5)*30*this.shake; ctx.translate(sx, sy); }
     
-    drawBackground(ctx, GW, GH, this.anim || Date.now()/1000);
-    drawMechaBase(ctx, gameW*0.1, gameH-20, this.hp/100);
+    drawBackground(ctx, GW, GH, this.anim, this.timeStopTimer > 0);
+    drawMechaBase(ctx, gameW*0.1, gameH-40, this.hp/100);
     
-    let aimX=Env.enemies.length>0?Env.enemies[0].x:gameW, aimY=Env.enemies.length>0?Env.enemies[0].y:gameH-40;
-    drawTurretGun(ctx,State.equippedTurret, gameW*0.1, gameH-40, Math.atan2(aimY-(gameH-40), aimX-(gameW*0.1)), this.recoil);
+    let aimX=Env.enemies.length>0?Env.enemies[0].x:gameW, aimY=Env.enemies.length>0?Env.enemies[0].y:gameH-60;
+    drawTurretGun(ctx,State.equippedTurret, gameW*0.1, gameH-60, Math.atan2(aimY-(gameH-60), aimX-(gameW*0.1)), this.recoil);
     
-    Env.enemies.forEach(e=>drawMonster(ctx,e,e.x,e.y,e.anim,e.enrage,e.curHp,e.maxHp)); 
-    Env.projs.forEach(p=>p.draw(ctx)); 
-    Env.particles.forEach(p=>p.draw(ctx));
-    Env.texts.forEach(t=>t.draw(ctx));
+    Env.enemies.forEach(e=>drawMonster(ctx,e,e.x,e.y,e.anim,e.enrage,e.curHp,e.maxHp, e.effects.hitFlash)); 
+    Env.projs.forEach(p=>p.draw(ctx)); Env.particles.forEach(p=>p.draw(ctx)); Env.texts.forEach(t=>t.draw(ctx));
+    
+    if(this.timeStopTimer > 0) { ctx.fillStyle = 'rgba(0,50,150,0.2)'; ctx.fillRect(0,0,GW,GH); }
+    ctx.restore();
   }
 };
 
-let Demo = { anim:0, update(dt){ if(!GW)return; this.anim+=dt; }, draw(ctx){ drawBackground(ctx, GW, GH, this.anim); drawMechaBase(ctx, gameW*0.1, gameH-20); drawTurretGun(ctx, State.equippedTurret, gameW*0.1, gameH-40, 0, 0); } };
+let Demo = { anim:0, update(dt){ if(!GW)return; this.anim+=dt; }, draw(ctx){ drawBackground(ctx, GW, GH, this.anim, false); drawMechaBase(ctx, gameW*0.1, gameH-40); drawTurretGun(ctx, State.equippedTurret, gameW*0.1, gameH-60, 0, 0); } };
 
 /* === UI & System === */
 const UI = {
   activeModal:null, 
+  initCanvas(containerId, canvasId) {
+    let container = document.getElementById(containerId); if (!container) return null; let canvas = document.getElementById(canvasId);
+    if (!canvas) { canvas = document.createElement('canvas'); canvas.id = canvasId; if (canvasId === 'td-canvas-temp') { canvas.style.width = '100%'; canvas.style.height = '100%'; canvas.style.position = 'absolute'; } container.appendChild(canvas); }
+    canvas.width = Math.max(250, container.clientWidth || 250); canvas.height = Math.max(250, container.clientHeight || 250); return canvas;
+  },
   init(){ document.querySelectorAll('.opt-btn').forEach((btn,i)=>btn.addEventListener('pointerdown',e=>{e.preventDefault();Combat.answer(i);})); this.showMenu(); },
-  updateBadges(){ document.getElementById('hud-coins').textContent=State.coins; document.getElementById('mistake-cnt').textContent=\`(\${State.mistakes.length})\`; let rIdx=Math.min(5,Math.floor((State.maxStageVocab+State.maxStageGrammar)/30)); document.getElementById('cmd-rank').textContent=["見習兵","初級戰士","中級破陣者","高階戰術家","學測征服者","傳說戰神"][rIdx]; document.getElementById('prog-txt-vocab').textContent=\`第 \${State.maxStageVocab} 關\`; document.getElementById('prog-bar-vocab').style.width=\`\${State.maxStageVocab}%\`; document.getElementById('prog-txt-grammar').textContent=\`第 \${State.maxStageGrammar} 關\`; document.getElementById('prog-bar-grammar').style.width=\`\${State.maxStageGrammar}%\`; document.getElementById('dex-prog-txt').textContent=\`\${State.dex.length}/42\`; document.getElementById('gacha-badge').style.display=State.coins>=100?'block':'none'; let t=TURRETS_DB[State.equippedTurret]||TURRETS_DB[0]; document.getElementById('hangar-name').innerHTML=\`\${t.name} <span style="font-size:18px;color:var(--gold);">Lv.\${State.turretLvls[t.id]||1}</span>\`; document.getElementById('hangar-rare').textContent=t.rare; document.getElementById('hangar-rare').style.borderColor=RARE_COLORS[t.rare]; document.getElementById('hangar-rare').style.color=RARE_COLORS[t.rare]; document.getElementById('hangar-skill').textContent=\`技能: \${t.skill}\`; },
-  showMenu(){ this.closeAll(); document.getElementById('main-menu').classList.add('active'); this.updateBadges(); updateGameArea();}, 
+  updateBadges(){ document.getElementById('hud-coins').textContent=State.coins; document.getElementById('mistake-cnt').textContent=`(${State.mistakes.length})`; let rIdx=Math.min(5,Math.floor((State.maxStageVocab+State.maxStageGrammar)/30)); document.getElementById('cmd-rank').textContent=["見習兵","初級戰士","中級破陣者","高階戰術家","學測征服者","傳說戰神"][rIdx]; document.getElementById('prog-txt-vocab').textContent=`第 ${State.maxStageVocab} 關`; document.getElementById('prog-bar-vocab').style.width=`${State.maxStageVocab}%`; document.getElementById('prog-txt-grammar').textContent=`第 ${State.maxStageGrammar} 關`; document.getElementById('prog-bar-grammar').style.width=`${State.maxStageGrammar}%`; document.getElementById('dex-prog-txt').textContent=`${State.dex.length}/42`; let t=TURRETS_DB[State.equippedTurret]||TURRETS_DB[0]; document.getElementById('hangar-name').innerHTML=`${t.name} <span style="font-size:18px;color:var(--gold);">Lv.${State.turretLvls[t.id]||1}</span>`; document.getElementById('hangar-rare').textContent=t.rare; document.getElementById('hangar-rare').style.borderColor=RARE_COLORS[t.rare]; document.getElementById('hangar-rare').style.color=RARE_COLORS[t.rare]; document.getElementById('hangar-skill').textContent=`技能: ${t.skill}`; },
+  showMenu(){ this.closeAll(); document.getElementById('main-menu').classList.add('active'); this.updateBadges(); updateGameArea(); this.initCanvas('hangar-canvas-container', 'hangar-canvas');}, 
   showCombat(){ this.closeAll(); document.getElementById('combat-ui').classList.add('active'); }, 
   closeAll(){ document.querySelectorAll('.screen, .modal').forEach(el=>el.classList.remove('active')); this.activeModal=null; }, 
-  openModal(id){ if(this.activeModal)document.getElementById(this.activeModal).classList.remove('active'); document.getElementById(id).classList.add('active'); this.activeModal=id; }, 
+  openModal(id){ if(this.activeModal)document.getElementById(this.activeModal).classList.remove('active'); document.getElementById(id).classList.add('active'); this.activeModal=id; if(id === 'modal-turret') { this.initCanvas('td-canvas-container', 'td-canvas-temp'); } }, 
   closeModal(id){ document.getElementById(id).classList.remove('active'); this.activeModal=null; },
-  showNewMonsterAnim(def) {
-      let el = document.createElement('div'); el.className = 'new-monster-anim';
-      el.innerHTML = \`<div class="nm-title">NEW DISCOVERY!</div><div class="nm-icon" style="background:\${def.clr}; border-color:\${def.clr}"></div><div class="nm-name">\${def.name}</div>\`;
-      document.body.appendChild(el); AudioSys.unlock();
-      setTimeout(() => el.remove(), 2500);
-  },
+  showNewMonsterAnim(def) { let el = document.createElement('div'); el.className = 'new-monster-anim'; el.innerHTML = `<div class="nm-title">NEW DISCOVERY!</div><div class="nm-icon" style="background:${def.clr}; border-color:${def.clr}"></div><div class="nm-name">${def.name}</div>`; document.body.appendChild(el); AudioSys.unlock?.(); setTimeout(() => el.remove(), 2500); },
   openStageSelect(route){ let max=route==='vocab'?State.maxStageVocab:State.maxStageGrammar; document.getElementById('ms-title').textContent=route==='vocab'?"單字征途":"文法試煉"; let grid=document.getElementById('ms-grid'); grid.innerHTML=''; let selStage=max; for(let i=1;i<=100;i++){ let btn=document.createElement('div'); btn.className='stage-btn'; if(i<=max){ btn.classList.add('unlocked'); btn.textContent=i; if(i===selStage)btn.classList.add('current'); btn.onclick=()=>{grid.querySelectorAll('.stage-btn').forEach(b=>b.classList.remove('current')); btn.classList.add('current'); selStage=i;}; }else{ btn.classList.add('locked'); btn.innerHTML='<span style="font-size:16px;">🔒</span>'; } grid.appendChild(btn); } document.getElementById('ms-start-btn').onclick=()=>{this.closeModal('modal-stage');Combat.start(route,selStage);}; this.openModal('modal-stage'); },
-  openGacha(){ document.getElementById('mg-coins').textContent=State.coins; let inv=document.getElementById('mg-inv'); inv.innerHTML=''; TURRETS_DB.forEach(t=>{ let d=document.createElement('div'); d.className='card-item'; let has=State.turrets.includes(t.id); if(!has)d.classList.add('locked'); if(State.equippedTurret===t.id)d.style.borderColor='#0f0'; d.innerHTML=\`<div style="color:\${RARE_COLORS[t.rare]};font-size:16px;font-weight:bold;">\${t.rare}</div><div style="font-size:16px;margin:5px 0;color:#fff;">\${has?t.name:'???'}</div>\${has?\`<div style="font-size:14px;color:var(--gold);">Lv.\${State.turretLvls[t.id]}</div>\`:\`\`}\`; if(has)d.onclick=()=>this.openTurretDetail(t.id,true); inv.appendChild(d); }); this.openModal('modal-gacha'); },
-  openTurretDetail(tid,fromGacha=false){ const t=TURRETS_DB[tid]; document.getElementById('td-name').textContent=t.name; document.getElementById('td-rare').textContent=t.rare; document.getElementById('td-rare').style.borderColor=RARE_COLORS[t.rare]; document.getElementById('td-rare').style.color=RARE_COLORS[t.rare]; document.getElementById('td-level').textContent=\`Lv.\${State.turretLvls[tid]||1}\`; document.getElementById('td-type').textContent=t.desc; document.getElementById('td-skill').textContent=t.skill; let btn=document.getElementById('td-equip-btn'); if(State.equippedTurret===tid){btn.textContent="已裝備";btn.disabled=true;}else{btn.textContent="裝備";btn.disabled=false;btn.onclick=()=>{State.equippedTurret=tid;SaveSys.save();UI.updateBadges();this.closeModal('modal-turret');if(fromGacha)this.openGacha();};} this.openModal('modal-turret'); this.previewTurretId=tid; },
-  openDex(){ document.getElementById('md-count').textContent=State.dex.length; let list=document.getElementById('md-list'); list.innerHTML=''; MONSTERS_DB.forEach(m=>{ let has=State.dex.includes(m.id), d=document.createElement('div'); d.className='card-item'; if(!has)d.classList.add('locked'); d.innerHTML=\`<div style="color:\${has?m.clr:'#555'};font-weight:bold;font-size:20px;text-shadow:1px 1px 0 #000;">\${has?m.name:'???'}</div><div style="font-size:16px;color:#aaa;margin-top:5px;">\${m.type}</div>\`; list.appendChild(d); }); this.openModal('modal-dex'); },
-  openMistakes(){ let list=document.getElementById('mm-list'); list.innerHTML=''; if(State.mistakes.length===0){ list.innerHTML='<div style="text-align:center;color:#555;padding:20px;font-size:20px;">尚無錯題紀錄！</div>'; }else{ State.mistakes.forEach(m=>{ let d=document.createElement('div'); d.className='list-row'; d.innerHTML=\`<div style="font-weight:bold;font-size:20px;margin-bottom:8px;color:#fff;">\${m.q}</div><div style="color:var(--succ);font-size:18px;margin-bottom:4px;">正確: \${m.ans}</div><div style="color:var(--p-color);font-size:18px;">💡 \${m.exp}</div>\`; list.appendChild(d); }); } this.openModal('modal-mistakes'); },
-  showResult(win){ document.getElementById('res-title').textContent=win?"VICTORY！":"DEFEAT！"; document.getElementById('res-title').style.color=win?"var(--gold)":"var(--err)"; document.getElementById('res-stage').textContent=\`\${Combat.route==='vocab'?'單字征途':'文法試煉'} 第 \${Combat.level} 關\`; document.getElementById('res-reward').textContent=win?"獲得 +100 💎":"獲得 +0 💎"; document.getElementById('res-stats').textContent=\`答對率: \${Combat.stats.ansTot>0?Math.round((Combat.stats.ansCor/Combat.stats.ansTot)*100):0}%\`; document.getElementById('res-next-btn').style.display=win?'block':'none'; this.openModal('modal-result'); if(win){AudioSys.init();AudioSys.victory();} },
-  previewTurretId:-1, renderModals(){ if(!this.activeModal||this.activeModal==='modal-gacha'){ let hc=document.getElementById('hangar-canvas'); if(!hc){hc=document.createElement('canvas');hc.id='hangar-canvas';document.getElementById('hangar-canvas-container').appendChild(hc);} hc.width=hc.clientWidth; hc.height=hc.clientHeight; let hctx=hc.getContext('2d'); hctx.clearRect(0,0,hc.width,hc.height); hctx.save(); hctx.translate(hc.width/2,hc.height/2); drawMechaBase(hctx,0,20); drawTurretGun(hctx,State.equippedTurret,0,0,Math.sin(Date.now()*0.001)*0.2,0,1.5); hctx.restore(); } if(this.activeModal==='modal-turret'&&this.previewTurretId>=0){ let tc=document.getElementById('td-canvas-temp'); if(!tc){tc=document.createElement('canvas');tc.id='td-canvas-temp';tc.style.width='100%';tc.style.height='100%';tc.style.position='absolute';document.getElementById('td-canvas-container').appendChild(tc);} tc.width=tc.clientWidth; tc.height=tc.clientHeight; let tctx=tc.getContext('2d'); tctx.clearRect(0,0,tc.width,tc.height); tctx.save(); tctx.translate(tc.width/2,tc.height/2); drawMechaBase(tctx,0,20); drawTurretGun(tctx,this.previewTurretId,0,0,(Date.now()*0.002)%(Math.PI*2),0,1.5); tctx.restore(); } }
+  openGacha(){ document.getElementById('mg-coins').textContent=State.coins; let inv=document.getElementById('mg-inv'); inv.innerHTML=''; TURRETS_DB.forEach(t=>{ let d=document.createElement('div'); d.className='card-item'; let has=State.turrets.includes(t.id); if(!has)d.classList.add('locked'); if(State.equippedTurret===t.id)d.style.borderColor='#0f0'; d.innerHTML=`<div style="color:${RARE_COLORS[t.rare]};font-size:16px;font-weight:bold;">${t.rare}</div><div style="font-size:16px;margin:5px 0;color:#fff;">${has?t.name:'???'}</div>${has?`<div style="font-size:14px;color:var(--gold);">Lv.${State.turretLvls[t.id]}</div>`:``}`; if(has)d.onclick=()=>this.openTurretDetail(t.id,true); inv.appendChild(d); }); this.openModal('modal-gacha'); },
+  openTurretDetail(tid,fromGacha=false){ const t=TURRETS_DB[tid]; document.getElementById('td-name').textContent=t.name; document.getElementById('td-rare').textContent=t.rare; document.getElementById('td-rare').style.borderColor=RARE_COLORS[t.rare]; document.getElementById('td-rare').style.color=RARE_COLORS[t.rare]; document.getElementById('td-level').textContent=`Lv.${State.turretLvls[tid]||1}`; document.getElementById('td-type').textContent=t.desc; document.getElementById('td-skill').textContent=t.skill; let btn=document.getElementById('td-equip-btn'); if(State.equippedTurret===tid){btn.textContent="已裝備";btn.disabled=true;}else{btn.textContent="裝備";btn.disabled=false;btn.onclick=()=>{State.equippedTurret=tid;SaveSys.save();UI.updateBadges();this.closeModal('modal-turret');if(fromGacha)this.openGacha();};} this.openModal('modal-turret'); this.previewTurretId=tid; },
+  openDex(){ document.getElementById('md-count').textContent=State.dex.length; let list=document.getElementById('md-list'); list.innerHTML=''; MONSTERS_DB.forEach(m=>{ let has=State.dex.includes(m.id), d=document.createElement('div'); d.className='card-item'; if(!has)d.classList.add('locked'); d.innerHTML=`<div style="color:${has?m.clr:'#555'};font-weight:bold;font-size:20px;text-shadow:1px 1px 0 #000;">${has?m.name:'???'}</div><div style="font-size:16px;color:#aaa;margin-top:5px;">${m.type}</div>`; list.appendChild(d); }); this.openModal('modal-dex'); },
+  openMistakes(){ let list=document.getElementById('mm-list'); list.innerHTML=''; if(State.mistakes.length===0){ list.innerHTML='<div style="text-align:center;color:#555;padding:20px;font-size:20px;">尚無錯題紀錄！</div>'; }else{ State.mistakes.forEach(m=>{ let d=document.createElement('div'); d.className='list-row'; d.innerHTML=`<div style="font-weight:bold;font-size:20px;margin-bottom:8px;color:#fff;">${m.q}</div><div style="color:var(--succ);font-size:18px;margin-bottom:4px;">正確: ${m.ans}</div><div style="color:var(--p-color);font-size:18px;">💡 ${m.exp}</div>`; list.appendChild(d); }); } this.openModal('modal-mistakes'); },
+  showResult(win){ document.getElementById('res-title').textContent=win?"VICTORY！":"DEFEAT！"; document.getElementById('res-title').style.color=win?"var(--gold)":"var(--err)"; document.getElementById('res-stage').textContent=`${Combat.route==='vocab'?'單字征途':'文法試煉'} 第 ${Combat.level} 關`; document.getElementById('res-reward').textContent=win?"獲得 +100 💎":"獲得 +0 💎"; document.getElementById('res-stats').textContent=`答對率: ${Combat.stats.ansTot>0?Math.round((Combat.stats.ansCor/Combat.stats.ansTot)*100):0}%`; document.getElementById('res-next-btn').style.display=win?'block':'none'; this.openModal('modal-result'); if(win) { AudioSys.init(); AudioSys.victory?.(); } },
+  previewTurretId:-1, 
+  renderModals(){ 
+    if(!this.activeModal||this.activeModal==='modal-gacha'){ 
+      let hc=document.getElementById('hangar-canvas'); 
+      if(hc){ let hctx=hc.getContext('2d'); hctx.clearRect(0,0,hc.width,hc.height); hctx.save(); hctx.translate(hc.width/2,hc.height/2); drawMechaBase(hctx,0,20); drawTurretGun(hctx,State.equippedTurret,0,0,Math.sin(Date.now()*0.001)*0.2,0,1.5); hctx.restore(); }
+    } 
+    if(this.activeModal==='modal-turret'&&this.previewTurretId>=0){ 
+      let tc=document.getElementById('td-canvas-temp'); 
+      if(tc){ let tctx=tc.getContext('2d'); tctx.clearRect(0,0,tc.width,tc.height); tctx.save(); tctx.translate(tc.width/2,tc.height/2); drawMechaBase(tctx,0,20); drawTurretGun(tctx,this.previewTurretId,0,0,(Date.now()*0.002)%(Math.PI*2),0,1.5); tctx.restore(); }
+    } 
+  }
 };
 
 const Gacha = {
-  pull(times){ let cost=times===1?100:900; if(State.coins<cost){alert("鑽石不足！");return;} State.coins-=cost; SaveSys.save(); UI.openModal('gacha-anim'); document.getElementById('g-result-grid').style.display='none'; document.getElementById('g-circle').style.display='flex'; document.getElementById('gacha-skip-btn').style.display='block'; document.getElementById('gacha-skip-btn').textContent="跳過"; document.getElementById('gacha-skip-btn').onclick=()=>this.skip(); AudioSys.init(); AudioSys.play(200,'sawtooth',1.5,0.2); Vibrate([100,50,100,50,300]); let results=[]; for(let i=0;i<times;i++){ let r=Math.random(), pool=[]; if(times===10&&i===9) pool=TURRETS_DB.filter(t=>t.rare==='SR'||t.rare==='UR'); else{ if(r<0.02) pool=TURRETS_DB.filter(t=>t.rare==='UR'); else if(r<0.12) pool=TURRETS_DB.filter(t=>t.rare==='SR'); else if(r<0.40) pool=TURRETS_DB.filter(t=>t.rare==='R'); else pool=TURRETS_DB.filter(t=>t.rare==='N'); } if(pool.length===0) pool=TURRETS_DB; let get=pool[Math.floor(Math.random()*pool.length)]; results.push(get); if(State.turrets.includes(get.id)) State.turretLvls[get.id]++; else{ State.turrets.push(get.id); State.turretLvls[get.id]=1; } } SaveSys.save(); this.animTid=setTimeout(()=>{this.showResultCards(results);},1500); },
-  showResultCards(arr){ document.getElementById('g-circle').style.display='none'; let grid=document.getElementById('g-result-grid'); grid.style.display='grid'; grid.innerHTML=''; let maxRare='N'; arr.forEach((d,i)=>{ if(d.rare==='UR')maxRare='UR'; else if(d.rare==='SR'&&maxRare!=='UR')maxRare='SR'; setTimeout(()=>{ let card=document.createElement('div'); card.className='card-item'; card.style.borderColor=d.clr; card.innerHTML=\`<div style="font-size:16px;color:\${RARE_COLORS[d.rare]}">\${d.rare}</div><div style="font-weight:bold;font-size:20px;color:#fff;margin-top:5px;">\${d.name}</div>\`; grid.appendChild(card); if(d.rare==='UR'||d.rare==='SR'){AudioSys.gachaSR();Vibrate([50,30,50,30,100]);}else{AudioSys.gachaR();Vibrate(30);} },i*150); }); document.getElementById('gacha-skip-btn').textContent="完成"; document.getElementById('gacha-skip-btn').onclick=()=>UI.openGacha(); }, skip(){ clearTimeout(this.animTid); UI.openGacha(); }
+  timers: [], isAnimating: false,
+  clearTimers() { this.timers.forEach(id => clearTimeout(id)); this.timers = []; },
+  pull(times){ 
+      if (this.isAnimating) return; let cost=times===1?100:900; if(State.coins<cost){alert("鑽石不足！");return;} 
+      this.clearTimers(); this.isAnimating = true; State.coins-=cost; SaveSys.save(); UI.updateBadges(); 
+      UI.openModal('gacha-anim'); document.getElementById('g-result-grid').style.display='none'; document.getElementById('g-circle').style.display='flex'; document.getElementById('gacha-skip-btn').style.display='block'; document.getElementById('gacha-skip-btn').textContent="跳過"; 
+      AudioSys.init(); AudioSys.play(200,'sawtooth',1.5,0.2); Vibrate([100,50,100,50,300]); 
+      let results=[]; for(let i=0;i<times;i++){ let r=Math.random(), pool=[]; if(times===10&&i===9) pool=TURRETS_DB.filter(t=>t.rare==='SR'||t.rare==='UR'); else{ if(r<0.02) pool=TURRETS_DB.filter(t=>t.rare==='UR'); else if(r<0.12) pool=TURRETS_DB.filter(t=>t.rare==='SR'); else if(r<0.40) pool=TURRETS_DB.filter(t=>t.rare==='R'); else pool=TURRETS_DB.filter(t=>t.rare==='N'); } if(pool.length===0) pool=TURRETS_DB; let get=pool[Math.floor(Math.random()*pool.length)]; results.push(get); if(State.turrets.includes(get.id)) State.turretLvls[get.id]++; else{ State.turrets.push(get.id); State.turretLvls[get.id]=1; } } 
+      SaveSys.save(); document.getElementById('gacha-skip-btn').onclick = () => this.skip(results);
+      let mainTid = setTimeout(()=>{this.showResultCards(results);},1500); this.timers.push(mainTid);
+  },
+  showResultCards(arr, instant = false){ 
+      this.clearTimers(); document.getElementById('g-circle').style.display='none'; let grid=document.getElementById('g-result-grid'); grid.style.display='grid'; grid.innerHTML=''; 
+      arr.forEach((d,i)=>{ 
+          const renderCard = () => {
+              let card=document.createElement('div'); card.className='card-item'; card.style.borderColor=d.clr; card.innerHTML=`<div style="font-size:16px;color:${RARE_COLORS[d.rare]}">${d.rare}</div><div style="font-weight:bold;font-size:20px;color:#fff;margin-top:5px;">${d.name}</div>`; grid.appendChild(card); 
+              if(!instant){ if(d.rare==='UR'||d.rare==='SR'){ AudioSys.gachaSR?.(); Vibrate([50,30,50,30,100]);}else{ AudioSys.gachaR?.(); Vibrate(30);} }
+              if(i === arr.length - 1) this.isAnimating = false;
+          };
+          if(instant) renderCard(); else { let cardTid = setTimeout(renderCard, i*150); this.timers.push(cardTid); }
+      }); 
+      document.getElementById('gacha-skip-btn').textContent="完成"; document.getElementById('gacha-skip-btn').onclick=()=>{ this.clearTimers(); this.isAnimating = false; UI.openGacha(); }; 
+  }, 
+  skip(results){ this.clearTimers(); this.isAnimating = false; if(results && results.length > 0) this.showResultCards(results, true); else UI.openGacha(); }
 };
 
-const Game = { addTestCoins(){ State.coins+=5000; SaveSys.save(); UI.updateBadges(); }, claimDaily(){ let now=Date.now(); if(now-State.lastDaily>86400000){ State.coins+=200; State.lastDaily=now; SaveSys.save(); UI.updateBadges(); alert("領取每日補給 200 💎"); }else alert("今天已經領取過囉！"); }, nextStage(){ UI.closeAll(); Combat.start(Combat.route, Math.min(100,Combat.level+1)); } };
+const Game = { claimDaily(){ let now=Date.now(); if(now-State.lastDaily>86400000){ State.coins+=200; State.lastDaily=now; SaveSys.save(); UI.updateBadges(); alert("領取每日補給 200 💎"); }else alert("今天已經領取過囉！"); }, nextStage(){ UI.closeAll(); Combat.start(Combat.route, Math.min(100,Combat.level+1)); } };
 
 /* === Main Loop === */
 let lastTime=0, fpsTimer=0, frames=0;
 function gameLoop(timestamp){
   if(!GW||!GH){ lastTime=timestamp; requestAnimationFrame(gameLoop); return; }
   let dt=Math.min(0.1,(timestamp-lastTime)/1000); lastTime=timestamp; frames++; fpsTimer+=dt;
-  if(fpsTimer>=1){ document.getElementById('fps-counter').textContent=\`FPS: \${frames}\`; frames=0; fpsTimer=0; }
+  if(fpsTimer>=1){ document.getElementById('fps-counter').textContent=`FPS: ${frames}`; frames=0; fpsTimer=0; }
   CTX.bg.clearRect(0,0,GW,GH); CTX.gm.clearRect(0,0,GW,GH);
   if(document.getElementById('main-menu').classList.contains('active')){ Demo.update(dt); Demo.draw(CTX.gm); } 
   if(Combat.active){ Combat.update(dt); Combat.draw(CTX.gm); } 
