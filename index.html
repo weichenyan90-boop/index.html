@@ -4,22 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>英單防線：傳說塔防 (最終完全版)</title>
+<title>英單防線：像素騎士風 (最終版)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 <style>
   :root {
     --p-color: #0ff;
     --s-color: #f0f;
-    --bg-dark: #050510;
-    --ui-bg: rgba(10, 10, 25, 0.9);
-    --btn-bg: #1a1a3a;
+    --bg-dark: #0a0a1a;
+    --ui-bg: rgba(10, 10, 25, 0.95);
+    --btn-bg: #222;
     --err: #ff3366;
     --succ: #33ffaa;
     --gold: #ffd700;
   }
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; touch-action: manipulation; }
-  body { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100dvh; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; color: white; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; touch-action: manipulation; font-family: 'VT323', monospace; letter-spacing: 1px; }
+  body { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100dvh; overflow: hidden; color: white; }
   
-  #app { position: relative; width: 100%; max-width: 480px; height: 100dvh; background: var(--bg-dark); overflow: hidden; box-shadow: 0 0 20px rgba(0,255,255,0.2); }
+  #app { position: relative; width: 100%; max-width: 800px; height: 100dvh; background: var(--bg-dark); overflow: hidden; box-shadow: 0 0 20px rgba(0,255,255,0.2); }
   
   /* Canvas Layers */
   #bg-canvas, #game-canvas, #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -34,109 +37,120 @@
   .active { display: flex !important; }
   
   /* Global Buttons & Text */
-  .btn { pointer-events: auto; background: var(--btn-bg); border: 2px solid var(--p-color); color: var(--p-color); padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; text-shadow: 0 0 5px var(--p-color); box-shadow: inset 0 0 10px rgba(0,255,255,0.2); transition: transform 0.1s, filter 0.1s; text-align: center; }
-  .btn:active { transform: scale(0.95); filter: brightness(1.2); }
+  .btn { pointer-events: auto; background: var(--btn-bg); border: 4px solid #555; color: #fff; padding: 10px 15px; font-size: 20px; font-weight: bold; cursor: pointer; text-transform: uppercase; text-shadow: 2px 2px 0 #000; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.6), inset 4px 4px 0 rgba(255,255,255,0.2); transition: transform 0.1s, filter 0.1s; text-align: center; }
+  .btn:active { transform: translateY(4px); box-shadow: inset 4px 4px 0 rgba(0,0,0,0.6); filter: brightness(1.2); }
   .btn:disabled { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
-  .modal-close { position: absolute; top: 15px; right: 15px; z-index: 40; }
-  h1, h2, h3 { margin: 0; text-align: center; }
-  .text-glow-cyan { color: var(--p-color); text-shadow: 0 0 10px var(--p-color); }
-  .text-glow-gold { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
-  .text-glow-magenta { color: var(--s-color); text-shadow: 0 0 10px var(--s-color); }
+  .modal-close { position: absolute; top: 15px; right: 15px; z-index: 40; background: var(--err); border-color: #900; }
+  h1, h2, h3 { margin: 0; text-align: center; text-shadow: 2px 2px 0 #000; }
+  .text-glow-cyan { color: var(--p-color); text-shadow: 0 0 10px var(--p-color), 2px 2px 0 #000; }
+  .text-glow-gold { color: var(--gold); text-shadow: 0 0 10px var(--gold), 2px 2px 0 #000; }
+  .text-glow-magenta { color: var(--s-color); text-shadow: 0 0 10px var(--s-color), 2px 2px 0 #000; }
   
   /* HUD */
-  .hud { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; z-index: 20; display: flex; justify-content: space-between; pointer-events: none; text-shadow: 1px 1px 3px #000; }
-  .fps { font-size: 10px; color: #555; position: absolute; top: 5px; right: 5px; }
+  .hud { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; z-index: 20; display: flex; justify-content: space-between; pointer-events: none; text-shadow: 2px 2px 0 #000; }
+  .fps { font-size: 16px; color: #aaa; position: absolute; top: 5px; right: 5px; z-index: 50; pointer-events: none;}
   
   /* --- Screen: Main Menu --- */
-  #main-menu { background: linear-gradient(to bottom, rgba(0,10,30,0.8), rgba(0,0,10,0.9)); justify-content: space-between; padding-bottom: 20px; pointer-events: auto; }
+  #main-menu { background: linear-gradient(to bottom, #112, #001); justify-content: space-between; padding-bottom: 20px; pointer-events: auto; }
   
   /* Commander Bar */
-  .commander-bar { display: flex; flex-direction: column; padding: 10px; background: rgba(20,20,40,0.8); border-bottom: 2px solid var(--p-color); }
+  .commander-bar { display: flex; flex-direction: column; padding: 10px; background: rgba(0,0,0,0.8); border-bottom: 4px solid var(--p-color); image-rendering: pixelated; }
   .cmd-top { display: flex; justify-content: space-between; align-items: center; }
-  .rank-title { font-size: 18px; font-weight: 900; background: linear-gradient(90deg, #0ff, #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .coins-display { font-size: 16px; font-weight: bold; color: var(--gold); display: flex; align-items: center; gap: 5px; }
+  .rank-title { font-size: 24px; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 var(--p-color); }
+  .coins-display { font-size: 24px; font-weight: bold; color: var(--gold); display: flex; align-items: center; gap: 5px; text-shadow: 2px 2px 0 #000; }
   .cmd-actions { display: flex; justify-content: space-between; margin-top: 10px; gap: 10px; }
   
   /* Hangar Showcase */
-  .hangar { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; perspective: 1000px; margin: 10px 0; }
-  .hangar-title { position: absolute; top: 0; font-size: 14px; color: #aaa; letter-spacing: 2px; }
-  #hangar-canvas-container { width: 200px; height: 200px; position: relative; }
-  #hangar-canvas { position: absolute; width: 100%; height: 100%; }
-  .hangar-info { text-align: center; margin-top: 10px; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid #444; }
-  .rarity-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 5px; color:#000; }
+  .hangar { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; margin: 10px 0; }
+  .hangar-title { position: absolute; top: 0; font-size: 20px; color: #aaa; text-shadow: 2px 2px 0 #000; }
+  #hangar-canvas-container { width: 250px; height: 250px; position: relative; }
+  #hangar-canvas { position: absolute; width: 100%; height: 100%; image-rendering: pixelated; }
+  .hangar-info { text-align: center; margin-top: 10px; background: rgba(0,0,0,0.8); padding: 10px 20px; border: 4px solid #444; }
+  .rarity-badge { display: inline-block; padding: 2px 8px; border: 2px solid #fff; font-size: 16px; font-weight: bold; margin-bottom: 5px; color:#000; text-shadow: none; }
   
   /* Campaign Boards */
   .campaign-container { display: flex; flex-direction: column; gap: 15px; padding: 0 20px; }
-  .campaign-card { position: relative; height: 90px; border-radius: 12px; overflow: hidden; border: 2px solid #555; display: flex; align-items: center; padding: 15px; cursor: pointer; transition: border-color 0.2s; background: linear-gradient(135deg, #1a1a2a, #2a2a4a); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-  .campaign-card::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%); transform: rotate(45deg); transition: 0.5s; pointer-events: none; }
-  .campaign-card:active::after { left: 100%; }
+  .campaign-card { position: relative; height: 90px; border: 4px solid #555; display: flex; align-items: center; padding: 15px; cursor: pointer; transition: border-color 0.2s; background: #222; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5), inset 4px 4px 0 rgba(255,255,255,0.1); }
+  .campaign-card:active { transform: translateY(4px); box-shadow: inset 4px 4px 0 rgba(0,0,0,0.5); }
   .campaign-card.vocab { border-color: var(--p-color); }
   .campaign-card.grammar { border-color: var(--s-color); }
-  .c-card-content { z-index: 2; width: 100%; }
-  .c-card-title { font-size: 22px; font-weight: 900; margin-bottom: 5px; }
+  .c-card-content { z-index: 2; width: 100%; pointer-events: none; }
+  .c-card-title { font-size: 28px; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 0 #000; }
   .vocab .c-card-title { color: var(--p-color); }
   .grammar .c-card-title { color: var(--s-color); }
-  .c-card-prog { font-size: 14px; color: #ccc; display: flex; justify-content: space-between; }
-  .prog-bar-bg { width: 100%; height: 4px; background: #222; border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .c-card-prog { font-size: 18px; color: #ccc; display: flex; justify-content: space-between; text-shadow: 1px 1px 0 #000; }
+  .prog-bar-bg { width: 100%; height: 8px; background: #000; border: 2px solid #444; margin-top: 8px; }
   .prog-bar-fill { height: 100%; transition: width 0.3s; }
   .vocab .prog-bar-fill { background: var(--p-color); }
   .grammar .prog-bar-fill { background: var(--s-color); }
   
   /* Bottom Corner Buttons */
   .sys-btn-container { display: flex; justify-content: space-between; padding: 0 20px; margin-top: 15px; }
-  .sys-btn { width: 70px; height: 70px; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; text-align: center; border: 3px solid; cursor: pointer; position: relative; background: radial-gradient(circle, #223, #001); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+  .sys-btn { width: 80px; height: 80px; border: 4px solid; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 18px; font-weight: bold; text-align: center; cursor: pointer; position: relative; background: #222; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5); text-shadow: 2px 2px 0 #000; }
   .sys-btn.gacha { border-color: var(--gold); color: var(--gold); }
   .sys-btn.dex { border-color: var(--s-color); color: var(--s-color); }
-  .sys-btn:active { transform: scale(0.9); }
-  .sys-btn-icon { font-size: 24px; margin-bottom: 2px; }
-  .badge-dot { position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; background: red; border-radius: 50%; border: 2px solid #000; animation: pulse 1s infinite; display: none; }
-  @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); } }
+  .sys-btn:active { transform: translateY(4px); box-shadow: inset 4px 4px 0 rgba(0,0,0,0.5); }
+  .sys-btn-icon { font-size: 32px; margin-bottom: 2px; }
+  .badge-dot { position: absolute; top: -10px; right: -10px; width: 20px; height: 20px; background: red; border: 4px solid #000; animation: pulse 1s infinite; display: none; }
   
-  /* --- Screen: Combat UI --- */
-  #combat-ui { justify-content: flex-end; background: transparent; }
+  /* --- Screen: Combat UI (Responsive) --- */
+  #combat-ui { flex-direction: column; justify-content: flex-end; background: transparent; }
   .combat-top-hud { position: absolute; top: 10px; width: 100%; padding: 0 20px; display: flex; justify-content: space-between; pointer-events: none; z-index: 20; }
-  .base-hp-container { display: flex; align-items: center; gap: 5px; }
-  .base-hp-bar { width: 100px; height: 10px; background: #333; border: 1px solid #555; border-radius: 5px; overflow: hidden; }
-  .base-hp-fill { height: 100%; background: #0f0; transition: width 0.2s, background-color 0.2s; }
+  .base-hp-container { display: flex; align-items: center; gap: 10px; }
+  .base-hp-bar { width: 120px; height: 20px; background: #000; border: 4px solid #fff; position: relative; }
+  .base-hp-fill { height: 100%; background: #f00; transition: width 0.2s, background-color 0.2s; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3); }
   
-  .qa-panel { height: 48%; background: var(--ui-bg); border-top: 3px solid var(--p-color); display: flex; flex-direction: column; padding: 15px; pointer-events: auto; z-index: 20; box-shadow: 0 -10px 20px rgba(0,0,0,0.5); transition: border-color 0.2s; }
-  .timer-bar-container { width: 100%; height: 8px; background: #222; border-radius: 4px; margin-bottom: 12px; overflow: hidden; border: 1px solid #444; }
+  .qa-panel { height: 48%; width: 100%; background: var(--ui-bg); border-top: 4px solid var(--p-color); display: flex; flex-direction: column; padding: 15px; pointer-events: auto; z-index: 20; box-shadow: 0 -10px 20px rgba(0,0,0,0.5); transition: border-color 0.2s; }
+  
+  @media (orientation: landscape) and (min-width: 500px) {
+      #combat-ui { flex-direction: row; justify-content: flex-end; }
+      .qa-panel { height: 100%; width: 45%; max-width: 450px; border-top: none; border-left: 4px solid var(--p-color); box-shadow: -10px 0 20px rgba(0,0,0,0.8); }
+      .combat-top-hud { width: 55%; }
+  }
+
+  .timer-bar-container { width: 100%; height: 12px; background: #000; border: 2px solid #555; margin-bottom: 12px; }
   .timer-bar { height: 100%; background: var(--p-color); width: 100%; transition: width 0.1s linear, background 0.3s; }
-  .question-box { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 20px; font-weight: bold; padding: 0 10px; margin-bottom: 15px; text-shadow: 1px 1px 2px #000; line-height: 1.4; }
+  .question-box { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 28px; font-weight: bold; padding: 0 10px; margin-bottom: 15px; text-shadow: 2px 2px 0 #000; line-height: 1.4; }
   .options-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-gap: 12px; height: 60%; }
-  .opt-btn { background: linear-gradient(to bottom, #2a2a4a, #1a1a3a); border: 2px solid #557; border-radius: 12px; color: white; font-size: 18px; font-weight: bold; display: flex; justify-content: center; align-items: center; padding: 5px; text-align: center; transition: all 0.1s; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-  .opt-btn:active { transform: scale(0.95); background: #335; }
-  .opt-btn.correct { background: var(--succ); border-color: #fff; color: #000; }
+  .opt-btn { background: #334; border: 4px solid #778; color: white; font-size: 24px; font-weight: bold; display: flex; justify-content: center; align-items: center; padding: 5px; text-align: center; transition: all 0.1s; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5); text-shadow: 2px 2px 0 #000; cursor: pointer;}
+  .opt-btn:active { transform: translateY(4px); box-shadow: inset 4px 4px 0 rgba(0,0,0,0.5); }
+  .opt-btn.correct { background: var(--succ); border-color: #fff; color: #000; text-shadow: none; }
   .opt-btn.wrong { background: var(--err); border-color: #fff; color: #fff; }
   
-  /* --- Modals --- */
+  /* --- Modals & Grid --- */
   .grid-list { display: grid; gap: 10px; padding: 10px 0; }
-  .gacha-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+  .gacha-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
   .dex-grid { grid-template-columns: repeat(2, 1fr); }
   
-  .card-item { background: #112; border: 2px solid #335; border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: transform 0.1s; position: relative; overflow: hidden; }
-  .card-item:active { transform: scale(0.95); }
+  .card-item { background: #222; border: 4px solid #555; padding: 10px; text-align: center; cursor: pointer; transition: transform 0.1s; position: relative; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5); }
+  .card-item:active { transform: translateY(4px); box-shadow: inset 4px 4px 0 rgba(0,0,0,0.5); }
   .card-item.locked { filter: grayscale(1) brightness(0.5); pointer-events: none; }
-  .list-row { background: #112; border: 1px solid #445; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+  .list-row { background: #222; border: 4px solid #445; padding: 12px; margin-bottom: 10px; }
+  
+  /* New Monster Animation overlay */
+  .new-monster-anim { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); border: 4px solid var(--gold); padding: 20px 40px; text-align: center; z-index: 100; animation: slideDownFlash 2.5s forwards; box-shadow: 0 0 30px var(--gold); }
+  .nm-title { color: var(--gold); font-size: 32px; text-shadow: 2px 2px 0 #000, 0 0 10px var(--gold); margin-bottom:15px;}
+  .nm-icon { width: 64px; height: 64px; margin: 0 auto 15px; border: 4px solid #fff; box-shadow: 0 0 15px #fff;}
+  .nm-name { color: #fff; font-size: 28px; text-shadow: 2px 2px 0 #000;}
+  @keyframes slideDownFlash { 0% { top: -20%; opacity: 0; } 10% { top: 20%; opacity: 1; box-shadow: 0 0 50px #fff; } 20% { box-shadow: 0 0 30px var(--gold); } 80% { top: 20%; opacity: 1; } 100% { top: 20%; opacity: 0; transform: translateX(-50%) scale(0.8); } }
   
   /* Gacha Animation */
   #gacha-anim { background: #000; justify-content: center; align-items: center; z-index: 50; overflow: hidden; }
-  .summon-circle { width: 200px; height: 200px; border: 5px dashed #fff; border-radius: 50%; animation: spin 2s linear infinite; display: flex; justify-content: center; align-items: center; position: relative; }
-  .summon-core { width: 50px; height: 50px; background: #fff; border-radius: 50%; box-shadow: 0 0 50px #fff; animation: pulse 0.5s infinite alternate; }
+  .summon-circle { width: 250px; height: 250px; border: 8px dashed #fff; animation: spin 2s linear infinite; display: flex; justify-content: center; align-items: center; position: relative; }
+  .summon-core { width: 80px; height: 80px; background: #fff; border: 4px solid #000; box-shadow: 0 0 50px #fff; animation: pulse 0.5s infinite alternate; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
   
   /* Victory Banner */
-  .victory-banner { font-size: 36px; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold), 0 0 40px #f80; text-align: center; margin: 20px auto; animation: slideDownBounce 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform: translateY(-100vh); }
+  .victory-banner { font-size: 48px; font-weight: 900; color: var(--gold); text-shadow: 4px 4px 0 #000, 0 0 20px var(--gold); text-align: center; margin: 20px auto; animation: slideDownBounce 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform: translateY(-100vh); }
   @keyframes slideDownBounce { to { transform: translateY(0); } }
-  @keyframes slideDownBounceEffect { 0% { top: 20%; opacity: 0; } 50% { top: 35%; opacity: 1; } 100% { top: 30%; opacity: 1; } }
   
   .stage-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 20px; }
-  .stage-btn { aspect-ratio: 1; display: flex; justify-content: center; align-items: center; background: #223; border: 2px solid #445; border-radius: 8px; font-weight: bold; cursor: pointer; }
+  .stage-btn { aspect-ratio: 1; display: flex; justify-content: center; align-items: center; background: #333; border: 4px solid #555; font-size: 24px; font-weight: bold; cursor: pointer; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5); }
   .stage-btn.unlocked { border-color: var(--p-color); color: #fff; }
   .stage-btn.locked { opacity: 0.3; pointer-events: none; }
-  .stage-btn.current { background: var(--p-color); color: #000; }
+  .stage-btn.current { background: var(--p-color); color: #000; text-shadow: none; box-shadow: none; }
   
-  #overheat-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,0,0,0.2); pointer-events: none; display: none; z-index: 25; }
+  #overheat-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,0,0,0.3); pointer-events: none; display: none; z-index: 25; mix-blend-mode: multiply; }
 </style>
 </head>
 <body>
@@ -154,22 +168,22 @@
     <div class="commander-bar">
       <div class="cmd-top">
         <div class="rank-title" id="cmd-rank">見習詞彙兵</div>
-        <div class="coins-display"><span style="font-size:20px;">💎</span> <span id="hud-coins">0</span></div>
+        <div class="coins-display">💎 <span id="hud-coins">0</span></div>
       </div>
       <div class="cmd-actions">
-        <button class="btn" style="flex:1; font-size:12px; padding:8px;" onclick="UI.openMistakes()">考前錯題本 <span id="mistake-cnt" style="color:var(--err);">(0)</span></button>
-        <button class="btn" style="flex:1; font-size:12px; padding:8px; border-color:var(--gold); color:var(--gold);" onclick="Game.claimDaily()" id="btn-daily">每日補給</button>
-        <button class="btn" style="padding:8px;" onclick="Game.addTestCoins()">+5000</button>
+        <button class="btn" style="flex:1; font-size:16px; padding:8px;" onclick="UI.openMistakes()">錯題本 <span id="mistake-cnt" style="color:var(--err);">(0)</span></button>
+        <button class="btn" style="flex:1; font-size:16px; padding:8px; border-color:var(--gold); color:var(--gold);" onclick="Game.claimDaily()" id="btn-daily">每日補給</button>
+        <button class="btn" style="padding:8px; font-size:16px;" onclick="Game.addTestCoins()">+5000</button>
       </div>
     </div>
     
     <div class="hangar" onclick="UI.openTurretDetail(State.equippedTurret)">
-      <div class="hangar-title">ACTIVE DEFENSE SYSTEM</div>
+      <div class="hangar-title">ACTIVE DEFENSE</div>
       <div id="hangar-canvas-container"></div>
       <div class="hangar-info">
         <div class="rarity-badge" id="hangar-rare">N</div>
-        <div style="font-size:18px; font-weight:bold; margin-bottom:2px;" id="hangar-name">基礎哨衛砲 <span style="font-size:14px; color:var(--gold);">Lv.1</span></div>
-        <div style="font-size:12px; color:var(--p-color);" id="hangar-skill">技能: 無特殊效果</div>
+        <div style="font-size:24px; font-weight:bold; margin-bottom:2px;" id="hangar-name">哨衛砲 <span style="font-size:18px; color:var(--gold);">Lv.1</span></div>
+        <div style="font-size:16px; color:var(--p-color);" id="hangar-skill">技能: 無特殊效果</div>
       </div>
     </div>
     
@@ -177,14 +191,14 @@
       <div class="campaign-card vocab" onclick="UI.openStageSelect('vocab')">
         <div class="c-card-content">
           <div class="c-card-title">單字征途</div>
-          <div class="c-card-prog"><span id="prog-txt-vocab">第 1 關 / 初級</span> <span></span></div>
+          <div class="c-card-prog"><span id="prog-txt-vocab">第 1 關</span> <span></span></div>
           <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-bar-vocab" style="width: 1%;"></div></div>
         </div>
       </div>
       <div class="campaign-card grammar" onclick="UI.openStageSelect('grammar')">
         <div class="c-card-content">
           <div class="c-card-title">文法試煉</div>
-          <div class="c-card-prog"><span id="prog-txt-grammar">第 1 關 / 初級</span> <span></span></div>
+          <div class="c-card-prog"><span id="prog-txt-grammar">第 1 關</span> <span></span></div>
           <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-bar-grammar" style="width: 1%;"></div></div>
         </div>
       </div>
@@ -197,7 +211,7 @@
       </div>
       <div class="sys-btn dex" onclick="UI.openDex()">
         <div class="sys-btn-icon">📖</div>圖鑑
-        <div style="font-size:10px; color:#aaa; margin-top:2px;" id="dex-prog-txt">0/42</div>
+        <div style="font-size:14px; color:#aaa; margin-top:2px; text-shadow:1px 1px 0 #000;" id="dex-prog-txt">0/42</div>
       </div>
     </div>
   </div>
@@ -206,16 +220,16 @@
   <div id="combat-ui" class="screen">
     <div class="combat-top-hud">
       <div class="base-hp-container">
-        <span style="font-size:20px;">🛡️</span>
+        <span style="font-size:28px; text-shadow:2px 2px 0 #000;">🛡️</span>
         <div class="base-hp-bar"><div class="base-hp-fill" id="combat-hp-fill"></div></div>
       </div>
       <div style="text-align:right;">
-        <div id="combat-stage-info" style="font-size:12px; color:#aaa;">單字 第1關</div>
-        <div id="combat-enemies" style="font-weight:bold; color:#fff;">剩餘: 0</div>
+        <div id="combat-stage-info" style="font-size:18px; color:#aaa; text-shadow:2px 2px 0 #000;">單字 第1關</div>
+        <div id="combat-enemies" style="font-size:20px; font-weight:bold; color:#fff; text-shadow:2px 2px 0 #000;">剩餘: 0</div>
       </div>
     </div>
     
-    <div id="fever-text" style="position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-size:40px; font-weight:900; color:var(--gold); text-shadow:0 0 20px var(--gold); display:none; z-index:25; animation:pulse 0.5s infinite;">FEVER TIME!</div>
+    <div id="fever-text" style="position:absolute; top:30%; left:50%; transform:translate(-50%,-50%); font-size:60px; font-weight:900; color:var(--gold); text-shadow:4px 4px 0 #000, 0 0 20px var(--gold); display:none; z-index:25; animation:pulse 0.5s infinite;">FEVER!</div>
     
     <div class="qa-panel" id="qa-panel">
       <div class="timer-bar-container"><div class="timer-bar" id="qa-timer"></div></div>
@@ -234,31 +248,31 @@
     <button class="btn modal-close" onclick="UI.closeModal('modal-stage')">X</button>
     <h2 class="text-glow-cyan" id="ms-title">選擇關卡</h2>
     <div class="stage-grid" id="ms-grid"></div>
-    <div style="margin-top: 20px; text-align: center;"><button class="btn" style="width:100%; padding:15px; font-size:20px;" id="ms-start-btn">出戰最新關卡</button></div>
+    <div style="margin-top: 20px; text-align: center;"><button class="btn" style="width:100%; padding:15px; font-size:24px;" id="ms-start-btn">出戰</button></div>
   </div>
 
   <div id="modal-gacha" class="modal">
     <button class="btn modal-close" onclick="UI.closeModal('modal-gacha')">X</button>
     <h2 class="text-glow-gold">轉蛋商店</h2>
-    <div style="text-align:center; margin:10px 0;">持有: <span id="mg-coins" style="color:var(--gold); font-weight:bold;">0</span> 💎</div>
+    <div style="text-align:center; margin:10px 0; font-size:24px;">持有: <span id="mg-coins" style="color:var(--gold); font-weight:bold;">0</span> 💎</div>
     <div style="display:flex; gap:10px; margin-bottom: 20px;">
-      <button class="btn" style="flex:1;" onclick="Gacha.pull(1)">單抽<br><span style="font-size:12px; font-weight:normal;">100 💎</span></button>
-      <button class="btn" style="flex:1; border-color:var(--s-color); color:var(--s-color);" onclick="Gacha.pull(10)">10連抽 (保底SR)<br><span style="font-size:12px; font-weight:normal;">900 💎</span></button>
+      <button class="btn" style="flex:1;" onclick="Gacha.pull(1)">單抽<br><span style="font-size:16px; font-weight:normal; color:#aaa;">100 💎</span></button>
+      <button class="btn" style="flex:1; border-color:var(--s-color); color:var(--s-color);" onclick="Gacha.pull(10)">10連抽 (保底SR)<br><span style="font-size:16px; font-weight:normal; color:#aaa;">900 💎</span></button>
     </div>
-    <h3 style="border-bottom:1px solid #444; padding-bottom:5px; margin-bottom:10px;">機庫 (已解鎖砲塔)</h3>
+    <h3 style="border-bottom:4px solid #444; padding-bottom:5px; margin-bottom:10px;">機庫</h3>
     <div class="grid-list gacha-grid" id="mg-inv"></div>
   </div>
 
   <div id="modal-turret" class="modal" style="z-index:35;">
     <button class="btn modal-close" onclick="UI.closeModal('modal-turret')">X</button>
-    <div style="height:40%; display:flex; justify-content:center; align-items:center; border-bottom:2px solid #333; margin-bottom:15px; position:relative;"><div id="td-canvas-container" style="width:200px; height:200px; position:relative;"></div></div>
+    <div style="height:40%; display:flex; justify-content:center; align-items:center; border-bottom:4px solid #333; margin-bottom:15px; position:relative;"><div id="td-canvas-container" style="width:250px; height:250px; position:relative;"></div></div>
     <div style="text-align:center;">
       <div class="rarity-badge" id="td-rare">SSR</div>
-      <h2 id="td-name" style="margin:5px 0;">Name</h2>
-      <div style="color:var(--gold); font-weight:bold; margin-bottom:15px;" id="td-level">Lv.1</div>
-      <div class="list-row" style="text-align:left;"><div style="color:#aaa; font-size:12px; margin-bottom:5px;">砲彈特性</div><div id="td-type" style="color:#fff;">Type</div></div>
-      <div class="list-row" style="text-align:left;"><div style="color:var(--p-color); font-size:12px; margin-bottom:5px;">專屬技能</div><div id="td-skill" style="font-weight:bold;">Skill</div></div>
-      <button class="btn" style="width:100%; padding:15px; font-size:18px; margin-top:10px;" id="td-equip-btn">裝備出戰</button>
+      <h2 id="td-name" style="margin:5px 0; font-size:32px;">Name</h2>
+      <div style="color:var(--gold); font-weight:bold; font-size:24px; margin-bottom:15px;" id="td-level">Lv.1</div>
+      <div class="list-row" style="text-align:left;"><div style="color:#aaa; font-size:16px; margin-bottom:5px;">特性</div><div id="td-type" style="color:#fff; font-size:20px;">Type</div></div>
+      <div class="list-row" style="text-align:left;"><div style="color:var(--p-color); font-size:16px; margin-bottom:5px;">技能</div><div id="td-skill" style="font-weight:bold; font-size:20px;">Skill</div></div>
+      <button class="btn" style="width:100%; padding:15px; font-size:24px; margin-top:10px;" id="td-equip-btn">裝備</button>
     </div>
   </div>
 
@@ -266,244 +280,299 @@
     <button class="btn modal-close" onclick="Gacha.skip()" id="gacha-skip-btn">跳過</button>
     <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; width:100%;" id="gacha-scene">
       <div class="summon-circle" id="g-circle"><div class="summon-core" id="g-core"></div></div>
-      <div id="g-result-grid" class="grid-list gacha-grid" style="display:none; width:100%; max-width:400px; gap:15px; justify-items:center;"></div>
+      <div id="g-result-grid" class="grid-list gacha-grid" style="display:none; width:100%; max-width:500px; gap:15px; justify-items:center;"></div>
     </div>
   </div>
 
   <div id="modal-dex" class="modal">
     <button class="btn modal-close" onclick="UI.closeModal('modal-dex')">X</button>
-    <h2 class="text-glow-magenta">傳說怪獸圖鑑</h2>
-    <div style="text-align:center; margin:10px 0; color:#aaa;">收集進度: <span id="md-count">0</span> / 42</div>
+    <h2 class="text-glow-magenta">怪物圖鑑</h2>
+    <div style="text-align:center; margin:10px 0; color:#aaa; font-size:20px;">收集進度: <span id="md-count">0</span> / 42</div>
     <div class="grid-list dex-grid" id="md-list"></div>
   </div>
 
   <div id="modal-mistakes" class="modal">
     <button class="btn modal-close" onclick="UI.closeModal('modal-mistakes')">X</button>
-    <h2 class="text-glow-cyan">考前錯題本</h2>
-    <div style="text-align:center; margin:10px 0; font-size:12px; color:#aaa;">自動記錄答錯或超時題目</div>
+    <h2 class="text-glow-cyan">錯題本</h2>
+    <div style="text-align:center; margin:10px 0; font-size:16px; color:#aaa;">自動記錄答錯或超時題目</div>
     <div id="mm-list" style="flex:1; overflow-y:auto; padding-bottom:20px;"></div>
   </div>
 
-  <div id="modal-result" class="modal" style="justify-content:center; text-align:center; background:rgba(0,5,15,0.95);">
-    <div class="victory-banner" id="res-title">VICTORY！完全勝利！</div>
-    <div style="background:rgba(255,255,255,0.05); border:1px solid #333; border-radius:10px; padding:20px; margin:20px 0;">
-      <div id="res-stage" style="color:#aaa; margin-bottom:10px;">單字征途 第 1 關</div>
-      <div style="font-size:24px; color:var(--gold); font-weight:bold; margin-bottom:10px;" id="res-reward">獲得 +100 💎</div>
-      <div id="res-stats" style="color:#fff;">答對率: 100%</div>
-      <div id="res-new-monster" style="color:var(--s-color); font-weight:bold; margin-top:10px; animation:pulse 1s infinite; display:none;">✨ 解鎖新圖鑑！</div>
+  <div id="modal-result" class="modal" style="justify-content:center; text-align:center; background:rgba(0,0,0,0.95);">
+    <div class="victory-banner" id="res-title">VICTORY！</div>
+    <div style="background:#222; border:4px solid #555; padding:20px; margin:20px 0; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5);">
+      <div id="res-stage" style="color:#aaa; font-size:20px; margin-bottom:10px;">單字 第 1 關</div>
+      <div style="font-size:32px; color:var(--gold); font-weight:bold; margin-bottom:10px; text-shadow:2px 2px 0 #000;" id="res-reward">獲得 +100 💎</div>
+      <div id="res-stats" style="color:#fff; font-size:24px;">答對率: 100%</div>
     </div>
     <div style="display:flex; gap:15px; justify-content:center; margin-top:30px;">
-      <button class="btn" style="flex:1; border-color:#888; color:#888;" onclick="UI.showMenu()">返回大廳</button>
-      <button class="btn" style="flex:2; font-size:18px;" id="res-next-btn" onclick="Game.nextStage()">下一關</button>
+      <button class="btn" style="flex:1; border-color:#888; color:#aaa;" onclick="UI.showMenu()">大廳</button>
+      <button class="btn" style="flex:2; font-size:24px;" id="res-next-btn" onclick="Game.nextStage()">下一關</button>
     </div>
   </div>
 
 </div>
 
 <script>
-/* === 1. Data DB === */
+/* === Data DB === */
 const Q_RAW = `vocab|1|A ___ is an animal kept in the house.|pet|car|cup|pen|0|pet=寵物
 vocab|1|I use a ___ to write.|book|pen|bag|cup|1|pen=筆
 vocab|1|The ___ shines in the day.|moon|star|sun|cloud|2|sun=太陽
 vocab|1|She reads a ___ every night.|book|shoe|tree|car|0|book=書
 vocab|1|We eat food on a ___.|wall|table|floor|door|1|table=桌子
-vocab|1|An ___ a day keeps the doctor away.|apple|orange|banana|grape|0|apple=蘋果
-vocab|1|Birds fly in the ___.|sea|sky|ground|water|1|sky=天空
-vocab|1|I wear ___ on my feet.|hats|gloves|shoes|shirts|2|shoes=鞋子
-vocab|1|A ___ has four wheels.|bike|boat|car|plane|2|car=汽車
-vocab|1|I drink ___ every morning.|milk|bread|rice|meat|0|milk=牛奶
-vocab|2|The manager has to ___ the meeting.|attend|attract|attach|attack|0|attend=參加
-vocab|2|Please ___ your seatbelt.|fasten|loose|break|cut|0|fasten=繫緊
-vocab|2|She made a ___ decision.|brief|bright|brave|broad|2|brave=勇敢的
-vocab|2|The weather is highly ___.|predict|predictable|prediction|predicts|1|predictable=可預測的
-vocab|2|He has a strong ___ in God.|belief|believe|believer|believing|0|belief=信仰
-vocab|2|The factory produces ___ chemicals.|toxic|tonic|topic|tunic|0|toxic=有毒的
-vocab|2|It is ___ to wear a helmet.|compulsory|compassion|complex|complete|0|compulsory=強制的
-vocab|2|She gave a ___ smile.|genuine|genius|general|gentle|0|genuine=真誠的
-vocab|2|The plan was entirely ___.|feasible|fearful|feeble|festive|0|feasible=可行的
-vocab|2|We need to ___ the problem.|tackle|tickle|tangle|toggle|0|tackle=處理
-vocab|3|His remarks were highly ___.|ambiguous|ambitious|ambidextrous|ambient|0|ambiguous=模稜兩可的
-vocab|3|The disease is ___ in this region.|endemic|epidemic|pandemic|academic|0|endemic=地方性的
-vocab|3|She showed great ___ in the face of danger.|fortitude|fortune|fortress|fortify|0|fortitude=堅韌
-vocab|3|The evidence is ___.|irrefutable|irregular|irrelevant|irrational|0|irrefutable=無可辯駁的
-vocab|3|His lifestyle is quite ___.|sedentary|sedative|sediment|seductive|0|sedentary=久坐的
-vocab|3|The changes are largely ___.|cosmetic|cosmic|costly|costume|0|cosmetic=表面的
-vocab|3|The company is on the ___ of bankruptcy.|verge|surge|urge|purge|0|verge=邊緣
-vocab|3|She is known for her ___ behavior.|erratic|erotic|errand|error|0|erratic=反常的
-vocab|3|The plot of the novel is highly ___.|intricate|intrinsic|introvert|intrude|0|intricate=錯綜複雜的
-vocab|3|His actions were driven by ___.|malice|malady|malaria|malfunction|0|malice=惡意
 grammar|1|He ___ a student.|is|am|are|be|0|主詞He配is
 grammar|1|I ___ to school every day.|go|goes|went|going|0|每天發生用現在簡單式
-grammar|1|They ___ playing basketball now.|is|am|are|be|2|現在進行式複數用are
-grammar|1|She ___ not like apples.|do|does|did|done|1|第三人稱單數助動詞does
-grammar|1|___ you like music?|Do|Does|Are|Is|0|一般動詞疑問句用Do
-grammar|1|Yesterday, I ___ a movie.|watch|watches|watched|watching|2|過去式加ed
-grammar|1|I have ___ apples.|two|second|twice|twin|0|數量用基數詞
-grammar|1|This is ___ book.|my|me|I|mine|0|所有格my
-grammar|1|He is taller ___ me.|then|than|that|this|1|比較級連詞than
-grammar|1|___ is the weather today?|How|What|Where|Who|0|問天氣用How
-grammar|2|If it ___, we will stay home.|rains|rain|rained|raining|0|條件句現在代未來
-grammar|2|I look forward to ___ you.|see|saw|seeing|seen|2|look forward to+Ving
-grammar|2|She ___ lived here for 5 years.|has|have|had|having|0|現在完成式has+Vpp
-grammar|2|The book ___ by him is great.|written|writing|wrote|write|0|被動分詞作後位修飾
-grammar|2|He is the boy ___ won the prize.|who|which|where|whom|0|關係代名詞主格who
-grammar|2|By the time I arrived, he ___ left.|has|have|had|having|2|過去完成式had+Vpp
-grammar|2|Would you mind ___ the door?|open|opened|opening|opens|2|mind+Ving
-grammar|2|Neither he nor I ___ wrong.|am|is|are|be|0|動詞隨最近主詞變化
-grammar|2|I suggest that he ___ early.|go|goes|went|going|0|suggest+that+S+(should)+V原型
-grammar|2|It is important that she ___ here.|be|is|am|are|0|important+that+S+(should)+V原型
-grammar|3|Hardly ___ arrived when it rained.|had I|I had|have I|I have|0|否定副詞置首，倒裝
-grammar|3|Not only ___ the game, but he broke the record.|did he win|he won|he did win|won he|0|Not only置首，倒裝
-grammar|3|___ tired, he went to bed early.|Feeling|Felt|Feel|Feels|0|分詞構句主動Ving
-grammar|3|Had I known, I ___ helped.|would have|would|will have|will|0|與過去事實相反假設
-grammar|3|He speaks as if he ___ a king.|were|was|is|be|0|as if假設語氣用were
-grammar|3|No sooner had he left ___ the bomb exploded.|than|when|then|that|0|no sooner...than
-grammar|3|___ from space, the earth looks blue.|Seen|Seeing|Saw|See|0|被動分詞構句Seen
-grammar|3|I prefer walking to ___.|cycling|cycle|cycled|cycles|0|prefer Ving to Ving
-grammar|3|It is no use ___ over spilt milk.|crying|cry|cried|cries|0|It is no use+Ving
-grammar|3|The more you read, the ___ you know.|more|much|most|many|0|The 比較級, the 比較級
-vocab|1|The ___ is ringing, please answer it.|telephone|television|telescope|telegram|0|telephone=電話
-vocab|1|I need a ___ to cut the paper.|scissors|knife|spoon|fork|0|scissors=剪刀
-vocab|2|The committee will ___ the proposal tomorrow.|evaluate|evacuate|elevate|eliminate|0|evaluate=評估
-vocab|2|His performance was absolutely ___.|magnificent|malevolent|malicious|marginal|0|magnificent=極好的
-vocab|2|She has a ___ memory for names and faces.|remarkable|reliable|reluctant|redundant|0|remarkable=卓越的
-vocab|2|The company launched a ___ marketing campaign.|massive|passive|pensive|massive|0|massive=大規模的
-vocab|3|The scientist's theory was highly ___.|speculative|spectacular|spectator|spectrum|0|speculative=推測性的
-vocab|3|They tried to ___ the negative effects of the policy.|mitigate|litigate|instigate|navigate|0|mitigate=減輕
-vocab|3|His ___ attitude made it difficult to work with him.|belligerent|benevolent|beneficial|beautiful|0|belligerent=好鬥的
-vocab|3|The sudden economic downturn was ___.|unprecedented|unpredictable|unpretentious|unproductive|0|unprecedented=史無前例的
-grammar|1|The sun ___ in the east.|rises|raise|arise|rose|0|自然現象用現在簡單式
-grammar|1|He enjoys ___ books in his free time.|reading|read|to read|reads|0|enjoy + Ving
-grammar|2|If I ___ rich, I would travel the world.|were|was|am|be|0|與現在事實相反的假設語氣
-grammar|2|Scarcely ___ the house when it started to rain.|had he left|he had left|has he left|he has left|0|Scarcely置首，倒裝句型
-grammar|2|The girl ___ mother is a doctor is my friend.|whose|who|whom|which|0|所有格關係代名詞
-grammar|3|___ all the difficulties, they managed to complete the project.|Despite|Although|Even though|In spite|0|Despite + N/Ving
-grammar|3|It is imperative that the rules ___ strictly observed.|be|are|were|is|0|imperative that + S + (should) + V原型
-grammar|3|Not until yesterday ___ the truth.|did I know|I knew|I did know|knew I|0|Not until置首，主要子句倒裝`;
+grammar|1|They ___ playing basketball now.|is|am|are|be|2|現在進行式複數用are`;
 
 const QUESTIONS_DB = Q_RAW.trim().split('\n').filter(l=>l).map(line => {
   const p = line.split('|'); return { route: p[0], diff: parseInt(p[1]), q: p[2], opts: [p[3], p[4], p[5], p[6]], ans: parseInt(p[7]), exp: p[8] };
 });
 
 const TURRETS_DB = [
-  { id:0, rare:"N", name:"基礎哨衛砲", clr:"#aaa", b:1, skill:"無特殊效果", type:"kinetic", desc:"發射實體動能彈" },
-  { id:1, rare:"N", name:"速射輕機槍", clr:"#8a8", b:2, skill:"攻速快", type:"kinetic", desc:"雙管連發" },
-  { id:2, rare:"N", name:"重型加農砲", clr:"#a88", b:1, skill:"單發傷害高", type:"explosive", desc:"大口徑爆破彈" },
-  { id:3, rare:"N", name:"散彈發射器", clr:"#88a", b:3, skill:"微幅散射", type:"scatter", desc:"扇形面殺傷" },
-  { id:4, rare:"N", name:"雙聯裝火砲", clr:"#aa8", b:2, skill:"雙倍打擊", type:"kinetic", desc:"穩定輸出" },
-  { id:5, rare:"N", name:"防空突擊砲", clr:"#8aa", b:1, skill:"彈速極快", type:"kinetic", desc:"瞬達目標" },
-  { id:6, rare:"N", name:"工業鉚釘槍", clr:"#a8a", b:1, skill:"微小擊退", type:"knockback", desc:"物理衝擊" },
-  { id:7, rare:"N", name:"廢鐵投石機", clr:"#999", b:1, skill:"拋物線", type:"lob", desc:"跨越掩體" },
-  { id:8, rare:"N", name:"生鏽雷射器", clr:"#a55", b:1, skill:"低階穿透", type:"laser", desc:"細小紅色射線" },
-  { id:9, rare:"N", name:"基礎守護者", clr:"#5a5", b:1, skill:"基礎能量彈", type:"energy", desc:"綠色離子球" },
-  { id:10, rare:"R", name:"烈焰噴射器", clr:"#f50", b:1, skill:"持續燃燒", type:"burn", desc:"附加DoT傷害" },
-  { id:11, rare:"R", name:"劇毒酸液塔", clr:"#a0f", b:1, skill:"酸液腐蝕", type:"poison", desc:"紫色毒液球" },
-  { id:12, rare:"R", name:"寒霜冰凍砲", clr:"#0af", b:1, skill:"減速20%", type:"slow", desc:"冰藍冷卻射線" },
-  { id:13, rare:"R", name:"電磁脈衝槍", clr:"#ff0", b:1, skill:"微幅麻痺", type:"stun", desc:"黃色電弧" },
-  { id:14, rare:"R", name:"三連裝機砲", clr:"#aaa", b:3, skill:"三發散射", type:"scatter", desc:"密集火力" },
-  { id:15, rare:"R", name:"合金碎甲砲", clr:"#f88", b:1, skill:"無視護甲", type:"pierce", desc:"鎢鋼穿甲彈" },
-  { id:16, rare:"R", name:"金幣收割機", clr:"#fd0", b:1, skill:"擊殺掉落+", type:"gold", desc:"發射硬幣" },
-  { id:17, rare:"R", name:"音波震盪儀", clr:"#8ff", b:1, skill:"範圍擊退", type:"knockback", desc:"可見聲波環" },
-  { id:18, rare:"R", name:"追蹤導彈巢", clr:"#8f8", b:4, skill:"自動追蹤", type:"homing", desc:"蜂群飛彈" },
-  { id:19, rare:"R", name:"狂熱催化塔", clr:"#f05", b:1, skill:"FEVER加速", type:"fever", desc:"狂熱能量球" },
-  { id:20, rare:"SR", name:"雷暴特斯拉", clr:"#ff0", b:1, skill:"連鎖閃電彈跳3次", type:"chain", desc:"高壓電弧躍遷" },
-  { id:21, rare:"SR", name:"零度領域塔", clr:"#0ff", b:1, skill:"光環緩速場50%", type:"aura_slow", desc:"絕對零度結界" },
-  { id:22, rare:"SR", name:"空間黑洞儀", clr:"#80f", b:1, skill:"黑洞牽引聚怪", type:"blackhole", desc:"重力塌縮點" },
-  { id:23, rare:"SR", name:"核子裂變砲", clr:"#3f3", b:2, skill:"劇毒與大範圍爆炸", type:"explosive", desc:"核廢料彈頭" },
-  { id:24, rare:"SR", name:"量子多重飛彈", clr:"#f80", b:6, skill:"六重飛彈全彈發射", type:"scatter_homing", desc:"無死角覆蓋" },
-  { id:25, rare:"SR", name:"幻影折射鏡", clr:"#f0f", b:1, skill:"雷射折射攻擊全場", type:"bounce_laser", desc:"粉色稜鏡光束" },
-  { id:26, rare:"SR", name:"財神聚寶盆", clr:"#fd0", b:1, skill:"暴擊時爆出大量金幣", type:"gold_crit", desc:"純金元寶射擊" },
-  { id:27, rare:"SR", name:"時間靜止器", clr:"#fff", b:1, skill:"機率性時停1秒", type:"timestop", desc:"銀色時空波" },
-  { id:28, rare:"UR", name:"太陽神光束", clr:"#ffaa00", b:1, skill:"貫穿全場神聖光束", type:"super_laser", desc:"毀滅一切的恆星射線" },
-  { id:29, rare:"UR", name:"終焉星爆巨砲", clr:"#ff0055", b:4, skill:"浮游砲與毀滅爆炸", type:"ultimate", desc:"最高維度打擊" }
+  { id:0, rare:"N", name:"基礎哨衛砲", clr:"#ccc", b:1, skill:"無", type:"kinetic", desc:"實體動能彈" },
+  { id:1, rare:"R", name:"烈焰噴射器", clr:"#f50", b:1, skill:"燃燒DoT", type:"burn", desc:"附加燃燒" },
+  { id:2, rare:"SR", name:"雷暴特斯拉", clr:"#ff0", b:1, skill:"彈跳3次", type:"chain", desc:"高壓電弧" },
+  { id:3, rare:"UR", name:"太陽神光束", clr:"#fa0", b:1, skill:"貫穿全場", type:"super_laser", desc:"恆星射線" }
 ];
 const RARE_COLORS = { 'N':'#aaa', 'R':'#a0f', 'SR':'#fd0', 'UR':'#ff0055' };
 
 const MONSTER_NAMES = ["天蛾人","卓柏卡布拉","河童","報喪女妖","地獄犬","鐮鼬","吸血鬼","狼人","溫迪哥","貓妖","飛頭蠻","鵺","隱形鬼","飛龍","雪男","石像鬼","牛頭人","獨眼巨人","貝希摩斯","哥布林王","巨魔","弗蘭肯斯坦","泥人","大腳怪","樹精","沙蟲","冰霜巨獸","熔岩魔","尼斯湖水怪","九尾妖狐","海怪克拉肯","八岐大蛇","美杜莎","利維坦","邪神克蘇魯","百眼巨人","刻耳柏洛斯","龍王","鳳凰","饕餮","窮奇","混沌"];
 const MONSTERS_DB = MONSTER_NAMES.map((name, i) => {
   let type = i<14?'swift':(i<28?'heavy':'boss');
-  let spd=type==='swift'?50:(type==='heavy'?20:12);
+  let spd=type==='swift'?60:(type==='heavy'?30:15);
   let hp=type==='swift'?15:(type==='heavy'?60:200);
-  let size=type==='swift'?15:(type==='heavy'?28:45);
+  let size=type==='swift'?20:(type==='heavy'?35:55);
   let clr=type==='swift'?'#f44':(type==='heavy'?'#889':'#b0f');
   return { id:i, name, type, spd, hp, size, clr };
 });
 
-/* === 2. Core State === */
-const DEFAULT_STATE = { coins:0, maxStageVocab:1, maxStageGrammar:1, turrets:[0], turretLvls:{0:1}, equippedTurret:0, dex:[], mistakes:[], lastDaily:0 };
+/* === Core State === */
+const DEFAULT_STATE = { coins:0, maxStageVocab:1, maxStageGrammar:1, turrets:[0, 1, 2, 3], turretLvls:{0:1,1:1,2:1,3:1}, equippedTurret:0, dex:[], mistakes:[], lastDaily:0 };
 let State = JSON.parse(JSON.stringify(DEFAULT_STATE));
 const SaveSys = {
-  load() { try { let s = localStorage.getItem('ED_SAVE_V3'); if(s) { let d=JSON.parse(s); Object.keys(DEFAULT_STATE).forEach(k=>{ if(d[k]!==undefined) State[k]=d[k]; }); } } catch(e){} this.save(); },
-  save() { localStorage.setItem('ED_SAVE_V3', JSON.stringify(State)); }
+  load() { try { let s = localStorage.getItem('ED_SAVE_V4'); if(s) { let d=JSON.parse(s); Object.keys(DEFAULT_STATE).forEach(k=>{ if(d[k]!==undefined) State[k]=d[k]; }); } } catch(e){} this.save(); },
+  save() { localStorage.setItem('ED_SAVE_V4', JSON.stringify(State)); }
 };
 
-/* === 3. Audio & Haptics === */
+/* === Audio === */
 const AudioSys = {
   ctx:null, init(){ if(!this.ctx){ try{ const AC=window.AudioContext||window.webkitAudioContext; this.ctx=new AC(); }catch(e){} } if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume().catch(()=>{}); },
   play(freq,type,dur,vol=0.1){ if(!this.ctx)return; try{ let osc=this.ctx.createOscillator(), gain=this.ctx.createGain(); osc.type=type; osc.frequency.setValueAtTime(freq,this.ctx.currentTime); osc.connect(gain); gain.connect(this.ctx.destination); gain.gain.setValueAtTime(vol,this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+dur); osc.start(); osc.stop(this.ctx.currentTime+dur); }catch(e){} },
   shoot(){ this.play(150,'square',0.15,0.1); }, hit(){ this.play(60,'sawtooth',0.1,0.1); },
-  correct(){ this.play(800,'sine',0.2,0.15); setTimeout(()=>this.play(1200,'sine',0.4,0.15),100); }, wrong(){ this.play(120,'sawtooth',0.4,0.3); },
-  gachaR(){ this.play(400,'sine',0.3); this.play(600,'sine',0.4); }, gachaSR(){ [400,500,600,800,1000].forEach((f,i)=>setTimeout(()=>this.play(f,'sine',0.4,0.15),i*80)); }, victory(){ [523,659,783,1046].forEach((f,i)=>setTimeout(()=>this.play(f,'square',0.3,0.15),i*150)); }
+  correct(){ this.play(800,'square',0.1,0.1); setTimeout(()=>this.play(1200,'square',0.3,0.1),100); }, wrong(){ this.play(120,'sawtooth',0.4,0.3); },
+  unlock(){ this.play(600,'square',0.1,0.15); setTimeout(()=>this.play(800,'square',0.3,0.15),150); }
 };
 const Vibrate = p => { try{ if(navigator.vibrate)navigator.vibrate(p); }catch(e){} };
 
-/* === 4. Canvas === */
+/* === Canvas & Responsive Layout === */
 const C={ bg:document.getElementById('bg-canvas'), gm:document.getElementById('game-canvas'), ui:document.getElementById('ui-canvas') };
 const CTX={ bg:C.bg.getContext('2d'), gm:C.gm.getContext('2d'), ui:C.ui.getContext('2d') };
-let GW=0, GH=0, loopId=null;
-const resize=()=>{ const w=document.getElementById('app').clientWidth, h=document.getElementById('app').clientHeight, dpr=window.devicePixelRatio||1; [C.bg,C.gm,C.ui].forEach(c=>{ c.width=w*dpr; c.height=h*dpr; }); [CTX.bg,CTX.gm,CTX.ui].forEach(ctx=>{ ctx.scale(dpr,dpr); }); GW=w; GH=h*0.52; };
+let GW=0, GH=0, gameW=0, gameH=0, loopId=null;
+
+function updateGameArea() {
+    if(!GW) return;
+    let qa = document.getElementById('qa-panel');
+    let app = document.getElementById('app');
+    if(Combat.active && qa) {
+        let isLandscape = window.innerWidth > window.innerHeight && window.innerWidth >= 500;
+        let qaRect = qa.getBoundingClientRect();
+        let appRect = app.getBoundingClientRect();
+        if(isLandscape) {
+            gameW = qaRect.left - appRect.left;
+            gameH = GH;
+        } else {
+            gameW = GW;
+            gameH = qaRect.top - appRect.top;
+        }
+    } else {
+        gameW = GW; gameH = GH;
+    }
+    if(gameW <= 0) gameW = GW;
+    if(gameH <= 0) gameH = GH;
+}
+
+const resize=()=>{ 
+  const app = document.getElementById('app');
+  const w=app.clientWidth, h=app.clientHeight, dpr=window.devicePixelRatio||1; 
+  [C.bg,C.gm,C.ui].forEach(c=>{ c.width=w*dpr; c.height=h*dpr; }); 
+  [CTX.bg,CTX.gm,CTX.ui].forEach(ctx=>{ ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(dpr,dpr); ctx.imageSmoothingEnabled=false; }); 
+  GW=w; GH=h;
+  updateGameArea();
+};
 window.addEventListener('resize',resize); new ResizeObserver(resize).observe(document.getElementById('app')); resize();
 
-function drawGlow(ctx,x,y,r,color,alpha=1){ ctx.globalAlpha=alpha; ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=alpha*0.4; ctx.beginPath(); ctx.arc(x,y,r*1.5,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; }
-function drawMechaBase(ctx,x,y,hpRatio=1){ ctx.save(); ctx.translate(x,y); ctx.fillStyle='#1a1a2a'; ctx.strokeStyle='var(--p-color)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(-35,0); ctx.lineTo(35,0); ctx.lineTo(45,20); ctx.lineTo(-45,20); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-25,0); ctx.lineTo(25,0); ctx.lineTo(30,-15); ctx.lineTo(-30,-15); ctx.closePath(); ctx.fill(); ctx.stroke(); drawGlow(ctx,0,-5,8,hpRatio>0.3?'#0ff':'#f00',0.8+Math.sin(Date.now()*0.005)*0.2); if(hpRatio>0){ ctx.strokeStyle=`rgba(0,255,255,${Math.max(0.1,hpRatio*0.8)})`; ctx.beginPath(); ctx.arc(0,-10,60,-Math.PI*0.6,Math.PI*0.6); ctx.stroke(); } ctx.restore(); }
-function drawTurretGun(ctx,tid,x,y,angle,recoil,scale=1){ const def=TURRETS_DB[tid]; ctx.save(); ctx.translate(x,y); ctx.rotate(angle); ctx.scale(scale,scale); ctx.fillStyle='#334'; ctx.fillRect(-15,-15,30,30); ctx.strokeStyle=def.clr; ctx.lineWidth=2; ctx.strokeRect(-15,-15,30,30); ctx.fillStyle='#556'; for(let i=0;i<def.b;i++){ let by=(i-(def.b-1)/2)*8; ctx.fillRect(15-recoil,by-3,25,6); ctx.strokeStyle=def.clr; ctx.strokeRect(15-recoil,by-3,25,6); } if(def.rare==='UR'){ ctx.rotate(Date.now()*0.002); ctx.strokeStyle=def.clr; ctx.beginPath(); ctx.arc(0,0,25,0,Math.PI*2); ctx.setLineDash([10,10]); ctx.stroke(); ctx.setLineDash([]); } ctx.restore(); }
-function drawMonster(ctx,def,x,y,anim,enrage=0){ ctx.save(); ctx.translate(x,y); ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.ellipse(0,def.size/2,def.size,def.size/3,0,0,Math.PI*2); ctx.fill(); ctx.translate(0,Math.sin(anim*10)*(def.type==='swift'?4:2)); if(enrage>0) drawGlow(ctx,0,0,def.size*1.2,'#f00',0.3); ctx.fillStyle=def.clr; if(def.type==='swift'){ ctx.beginPath(); ctx.moveTo(-def.size,-def.size/2); ctx.lineTo(def.size,0); ctx.lineTo(-def.size,def.size/2); ctx.closePath(); ctx.fill(); }else if(def.type==='heavy'){ ctx.fillRect(-def.size/2,-def.size,def.size,def.size*1.5); }else{ ctx.beginPath(); ctx.arc(0,-def.size/3,def.size,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(def.size,-def.size); ctx.stroke(); } ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(def.size/4,-def.size/4,def.size/5,0,Math.PI*2); ctx.fill(); ctx.fillStyle=enrage>0?'#f00':'#000'; ctx.beginPath(); ctx.arc(def.size/4+2,-def.size/4,def.size/10,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+/* --- Pixel Art Drawing Methods --- */
+function drawBackground(ctx, w, h, anim) {
+    ctx.fillStyle = '#0a0a1a'; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)'; ctx.lineWidth = 2;
+    let scroll = (anim * 20) % 40;
+    for(let i = -40; i < w; i+=40) { ctx.beginPath(); ctx.moveTo(i+scroll, 0); ctx.lineTo(i+scroll, h); ctx.stroke(); }
+    for(let j = 0; j < h; j+=40) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(w, j); ctx.stroke(); }
+}
 
-/* === 5. Entities === */
-class Particle { constructor(x,y,vx,vy,clr,life){this.x=x;this.y=y;this.vx=vx;this.vy=vy;this.clr=clr;this.life=life;this.maxLife=life;} update(dt){this.x+=this.vx*dt;this.y+=this.vy*dt;this.life-=dt;} draw(ctx){drawGlow(ctx,this.x,this.y,2,this.clr,Math.max(0,this.life/this.maxLife));} }
+function drawMechaBase(ctx,x,y,hpRatio=1){ 
+    ctx.save(); ctx.translate(x,y); 
+    ctx.fillStyle='#333'; ctx.strokeStyle='#000'; ctx.lineWidth=4; 
+    ctx.fillRect(-30, -10, 60, 20); ctx.strokeRect(-30, -10, 60, 20);
+    ctx.fillStyle='#555'; ctx.fillRect(-20, -25, 40, 15); ctx.strokeRect(-20, -25, 40, 15);
+    ctx.fillStyle=hpRatio>0.3?'#0ff':'#f00'; ctx.fillRect(-10, -20, 20, 5);
+    ctx.restore(); 
+}
+
+function drawTurretGun(ctx,tid,x,y,angle,recoil,scale=1){ 
+    const def=TURRETS_DB[tid] || TURRETS_DB[0]; 
+    ctx.save(); ctx.translate(x,y); ctx.rotate(angle); ctx.scale(scale,scale); 
+    ctx.fillStyle='#444'; ctx.strokeStyle='#000'; ctx.lineWidth=4; 
+    ctx.fillRect(-15,-15,30,30); ctx.strokeRect(-15,-15,30,30); 
+    ctx.fillStyle=def.clr; 
+    for(let i=0;i<def.b;i++){ 
+        let by=(i-(def.b-1)/2)*10; 
+        ctx.fillRect(15-recoil,by-5,25,10); ctx.strokeRect(15-recoil,by-5,25,10); 
+    } 
+    ctx.restore(); 
+}
+
+function drawMonster(ctx,def,x,y,anim,enrage,curHp,maxHp){ 
+    ctx.save(); ctx.translate(x,y + Math.sin(anim*10)*(def.type==='swift'?4:2)); 
+    ctx.fillStyle=def.clr; ctx.strokeStyle='#000'; ctx.lineWidth=4; 
+    let s = def.size;
+    if(def.type==='swift'){ 
+        ctx.beginPath(); ctx.moveTo(-s,-s/2); ctx.lineTo(s,0); ctx.lineTo(-s,s/2); ctx.closePath(); 
+        ctx.fill(); ctx.stroke(); 
+    }else{ 
+        ctx.fillRect(-s/2, -s, s, s*1.5); ctx.strokeRect(-s/2, -s, s, s*1.5); 
+    } 
+    // Eye
+    ctx.fillStyle='#fff'; ctx.fillRect(s/4, -s/4, s/3, s/3); 
+    ctx.fillStyle=enrage>0?'#f00':'#000'; ctx.fillRect(s/4+2, -s/4+2, s/6, s/6); 
+    
+    // HP Bar
+    let hpRatio = Math.max(0, curHp/maxHp);
+    ctx.fillStyle='#000'; ctx.fillRect(-s/2, -s - 15, s, 8);
+    ctx.fillStyle=hpRatio>0.5?'#0f0':(hpRatio>0.2?'#ff0':'#f00');
+    ctx.fillRect(-s/2+2, -s - 13, (s-4)*hpRatio, 4);
+    ctx.restore(); 
+}
+
+/* === Entities === */
+class Particle { 
+    constructor(x,y,vx,vy,clr,life){this.x=x;this.y=y;this.vx=vx;this.vy=vy;this.clr=clr;this.life=life;this.maxLife=life;} 
+    update(dt){this.x+=this.vx*dt;this.y+=this.vy*dt;this.life-=dt;} 
+    draw(ctx){
+        ctx.globalAlpha=Math.max(0,this.life/this.maxLife); 
+        ctx.fillStyle=this.clr; 
+        let s = Math.max(2, 6*(this.life/this.maxLife));
+        ctx.fillRect(this.x-s/2, this.y-s/2, s, s);
+        ctx.globalAlpha=1;
+    } 
+}
+
+class FloatingText {
+    constructor(x, y, text, color, scale=1.0) {
+        this.x = x + (Math.random()-0.5)*30; this.y = y + (Math.random()-0.5)*20;
+        this.text = text; this.color = color;
+        this.life = 1.0; this.maxLife = 1.0;
+        this.vy = 40 + Math.random()*30;
+        this.scale = scale;
+    }
+    update(dt) { this.y -= this.vy * dt; this.life -= dt; }
+    draw(ctx) {
+        ctx.save(); ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+        ctx.fillStyle = this.color; ctx.font = \`bold \${Math.floor(24 * this.scale)}px 'VT323', monospace\`;
+        ctx.textAlign = 'center'; ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
+        ctx.strokeText(this.text, this.x, this.y); ctx.fillText(this.text, this.x, this.y);
+        ctx.restore();
+    }
+}
+
 class Projectile {
-  constructor(x,y,tx,ty,clr,dmg,isEnemy=false,type='kinetic',bounces=0){
-    this.x=x;this.y=y;this.dmg=dmg;this.clr=clr;this.isEnemy=isEnemy;this.active=true;this.type=type;this.bounces=bounces;this.life=type==='blackhole'?3.0:10.0;
-    let dx=tx-x, dy=ty-y; let dist=Math.hypot(dx,dy)||1; let spd=isEnemy?150:(type==='blackhole'?200:600); this.vx=(dx/dist)*spd; this.vy=(dy/dist)*spd;
+  constructor(x,y,tx,ty,clr,dmg,isEnemy=false,type='kinetic',bounces=0, isCrit=false){
+    this.x=x;this.y=y;this.dmg=dmg;this.clr=clr;this.isEnemy=isEnemy;this.active=true;this.type=type;this.bounces=bounces;this.isCrit=isCrit;
+    this.life = type==='super_laser'?0.5:10.0;
+    let dx=tx-x, dy=ty-y; let dist=Math.hypot(dx,dy)||1; let spd=isEnemy?150:800; 
+    this.vx=(dx/dist)*spd; this.vy=(dy/dist)*spd;
   }
   update(dt){
     this.life-=dt; if(this.life<=0){this.active=false;return;}
-    if(this.type==='blackhole'&&this.life<2.5){
-      this.vx*=0.8; this.vy*=0.8;
-      Env.enemies.forEach(e=>{ let dx=this.x-e.x,dy=this.y-e.y,dist=Math.hypot(dx,dy); if(dist<150&&dist>10){ e.x+=(dx/dist)*100*dt; e.y+=(dy/dist)*100*dt; } });
-    }else{ this.x+=this.vx*dt; this.y+=this.vy*dt; }
-    if(this.x<0||this.x>GW+100||this.y<0||this.y>GH) this.active=false;
+    if(this.type!=='super_laser'){ this.x+=this.vx*dt; this.y+=this.vy*dt; }
+    if((this.x<0||this.x>gameW+100||this.y<0||this.y>gameH) && this.type !== 'super_laser') this.active=false;
   }
-  draw(ctx){ if(this.type==='blackhole'){ drawGlow(ctx,this.x,this.y,15+Math.random()*5,'#000',1); drawGlow(ctx,this.x,this.y,20,'#80f',0.5); }else drawGlow(ctx,this.x,this.y,this.type==='pierce'?8:4,this.clr,0.8); }
+  draw(ctx){ 
+      if(this.type === 'super_laser') {
+          ctx.strokeStyle = this.clr; ctx.lineWidth = 40 * (this.life/0.5); ctx.lineCap='butt';
+          ctx.beginPath(); ctx.moveTo(gameW*0.1, gameH-40); ctx.lineTo(gameW, this.y); ctx.stroke();
+          ctx.strokeStyle = '#fff'; ctx.lineWidth = 15 * (this.life/0.5); ctx.stroke();
+      } else if(this.type === 'laser') {
+          ctx.strokeStyle = this.clr; ctx.lineWidth = 8;
+          ctx.beginPath(); ctx.moveTo(this.x - this.vx*0.05, this.y - this.vy*0.05); ctx.lineTo(this.x, this.y); ctx.stroke();
+          ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.stroke();
+      } else { 
+          ctx.fillStyle=this.clr; ctx.fillRect(this.x-6,this.y-6,12,12); 
+      } 
+  }
 }
 
-let Env = { particles:[], projs:[], enemies:[], spawnExplosion(x,y,clr,count=8,size=1){ for(let i=0;i<count;i++){ if(this.particles.length>80)this.particles.shift(); let a=Math.random()*Math.PI*2,v=(Math.random()*50+30)*size; this.particles.push(new Particle(x,y,Math.cos(a)*v,Math.sin(a)*v,clr,0.4*size)); } }, clear(){this.particles=[];this.projs=[];this.enemies=[];} };
+let Env = { 
+    particles:[], projs:[], enemies:[], texts:[], 
+    spawnExplosion(x,y,clr,count=8,size=1){ 
+        for(let i=0;i<count;i++){ 
+            if(this.particles.length>100)this.particles.shift(); 
+            let a=Math.random()*Math.PI*2,v=(Math.random()*50+30)*size; 
+            this.particles.push(new Particle(x,y,Math.cos(a)*v,Math.sin(a)*v,clr,0.4*size)); 
+        } 
+    }, 
+    clear(){this.particles=[];this.projs=[];this.enemies=[];this.texts=[];} 
+};
 
+/* === Combat System === */
 let Combat = {
-  active:false, route:'', level:1, hp:100, maxHp:100, combo:0, feverTimer:0, overheatTimer:0, timeStopTimer:0, waveTot:0, waveSpawned:0, waveKilled:0, spawnTimer:0, qTimer:5, qMax:5, qActive:null, isAnswering:false, recoil:0, stats:{ansTot:0,ansCor:0},
-  start(route,level){ AudioSys.init(); this.active=true; this.route=route; this.level=level; this.hp=100; this.combo=0; this.feverTimer=0; this.overheatTimer=0; this.timeStopTimer=0; this.waveTot=10+Math.floor(level/3); this.waveSpawned=0; this.waveKilled=0; this.spawnTimer=2; this.stats={ansTot:0,ansCor:0}; this.isAnswering=false; Env.clear(); document.getElementById('combat-stage-info').textContent=`${route==='vocab'?'單字':'文法'} 第 ${level} 關`; UI.showCombat(); this.nextQ(); },
-  nextQ(){ this.isAnswering=false; let diff=this.level<=30?1:(this.level<=70?2:3); let pool=QUESTIONS_DB.filter(q=>q.route===this.route&&q.diff===diff); if(pool.length===0)pool=QUESTIONS_DB; let q=pool[Math.floor(Math.random()*pool.length)]; let arr=[0,1,2,3]; for(let i=3;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];} this.qActive={...q,shuffledIdx:arr}; this.qTimer=this.qMax=5; document.getElementById('qa-q').textContent=q.q; arr.forEach((origIdx,i)=>{ let btn=document.getElementById(`qa-${i}`); btn.textContent=q.opts[origIdx]; btn.className='opt-btn'; }); },
+  active:false, route:'', level:1, hp:100, maxHp:100, combo:0, feverTimer:0, overheatTimer:0, timeStopTimer:0, waveTot:0, waveSpawned:0, waveKilled:0, spawnTimer:0, qTimer:5, qMax:5, qActive:null, isAnswering:false, recoil:0, stats:{ansTot:0,ansCor:0}, startDexCount:0,
+  start(route,level){ 
+      AudioSys.init(); this.active=true; this.route=route; this.level=level; this.hp=100; this.combo=0; this.feverTimer=0; this.overheatTimer=0; this.timeStopTimer=0; 
+      this.waveTot=10+Math.floor(level/3); this.waveSpawned=0; this.waveKilled=0; this.spawnTimer=0.1; this.stats={ansTot:0,ansCor:0}; this.isAnswering=false; 
+      this.startDexCount = State.dex.length; Env.clear(); 
+      document.getElementById('combat-stage-info').textContent=\`\${route==='vocab'?'單字':'文法'} 第 \${level} 關\`; 
+      UI.showCombat(); 
+      setTimeout(()=>updateGameArea(), 50); // Ensure bounds are correct after UI switch
+      this.nextQ(); 
+  },
+  nextQ(){ 
+      this.isAnswering=false; let diff=this.level<=30?1:(this.level<=70?2:3); 
+      let pool=QUESTIONS_DB.filter(q=>q.route===this.route&&q.diff===diff); if(pool.length===0)pool=QUESTIONS_DB; 
+      let q=pool[Math.floor(Math.random()*pool.length)]; let arr=[0,1,2,3]; 
+      for(let i=3;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];} 
+      this.qActive={...q,shuffledIdx:arr}; this.qTimer=this.qMax=5; document.getElementById('qa-q').textContent=q.q; 
+      arr.forEach((origIdx,i)=>{ let btn=document.getElementById(\`qa-\${i}\`); btn.textContent=q.opts[origIdx]; btn.className='opt-btn'; }); 
+  },
   answer(btnIdx){
     if(!this.active||this.isAnswering||this.overheatTimer>0)return; this.isAnswering=true; AudioSys.init();
     let q=this.qActive, origIdx=btnIdx>=0?q.shuffledIdx[btnIdx]:-1, isCor=origIdx===q.ans, tTaken=5-this.qTimer; this.stats.ansTot++;
     if(isCor){
-      this.stats.ansCor++; if(btnIdx>=0)document.getElementById(`qa-${btnIdx}`).classList.add('correct'); AudioSys.correct();
+      this.stats.ansCor++; if(btnIdx>=0)document.getElementById(\`qa-\${btnIdx}\`).classList.add('correct'); AudioSys.correct();
       let crit=tTaken<=2; Vibrate(crit?[40,30,60]:30); this.combo++; if(this.combo>=5&&tTaken<=3)this.feverTimer=5;
-      let tDef=TURRETS_DB[State.equippedTurret], tLvl=State.turretLvls[State.equippedTurret], dmg=(10+tLvl*5)*(crit?2:1)*(this.hp<=1?2.5:1); this.recoil=10;
-      if(tDef.type==='timestop'&&Math.random()<0.3){ this.timeStopTimer=2.0; UI.showVisualEffect('TIME STOP!','#fff'); }
+      let tDef=TURRETS_DB[State.equippedTurret] || TURRETS_DB[0], tLvl=State.turretLvls[State.equippedTurret] || 1;
+      let dmg=(10+tLvl*5)*(crit?2:1)*(this.hp<=20?2.5:1); this.recoil=15;
+      
       let ep=Env.projs.find(p=>p.isEnemy);
       if(ep){ ep.active=false; Env.spawnExplosion(ep.x,ep.y,'#f0f'); AudioSys.shoot(); }
       else if(Env.enemies.length>0){
         let tgt=Env.enemies[0];
-        if(tDef.type==='scatter'||tDef.type==='scatter_homing') for(let s=-1;s<=1;s++) Env.projs.push(new Projectile(50,GH-40,tgt.x,tgt.y+s*30,tDef.clr,dmg/2,false,tDef.type));
-        else if(tDef.type==='chain') Env.projs.push(new Projectile(50,GH-40,tgt.x,tgt.y,tDef.clr,dmg,false,'chain',3));
-        else if(tDef.type==='blackhole') Env.projs.push(new Projectile(50,GH-40,tgt.x,tgt.y,tDef.clr,dmg*0.5,false,'blackhole'));
-        else Env.projs.push(new Projectile(50,GH-40,tgt.x,tgt.y,tDef.clr,dmg,false,tDef.type));
+        let px = gameW*0.1, py = gameH-40;
+        if(tDef.type==='scatter') for(let s=-1;s<=1;s++) Env.projs.push(new Projectile(px, py, tgt.x, tgt.y+s*50, tDef.clr, dmg/2, false, tDef.type, 0, crit));
+        else if(tDef.type==='chain') Env.projs.push(new Projectile(px, py, tgt.x, tgt.y, tDef.clr, dmg, false, 'chain', 3, crit));
+        else if(tDef.type==='super_laser') {
+            Env.projs.push(new Projectile(px, py, tgt.x, tgt.y, tDef.clr, dmg*3, false, 'super_laser', 0, crit));
+            Env.enemies.forEach(e => {
+                e.curHp -= (dmg*3);
+                Env.texts.push(new FloatingText(e.x, e.y-e.size, Math.floor(dmg*3), crit ? '#ff0' : '#fff', crit ? 1.5 : 1.0));
+            });
+        }
+        else Env.projs.push(new Projectile(px, py, tgt.x, tgt.y, tDef.clr, dmg, false, tDef.type, 0, crit));
         AudioSys.shoot();
       }
       setTimeout(()=>{if(this.active)this.nextQ();},300);
     }else{
-      if(btnIdx>=0)document.getElementById(`qa-${btnIdx}`).classList.add('wrong'); let corBtnIdx=q.shuffledIdx.indexOf(q.ans); if(corBtnIdx>=0)document.getElementById(`qa-${corBtnIdx}`).classList.add('correct');
+      if(btnIdx>=0)document.getElementById(\`qa-\${btnIdx}\`).classList.add('wrong'); let corBtnIdx=q.shuffledIdx.indexOf(q.ans); if(corBtnIdx>=0)document.getElementById(\`qa-\${corBtnIdx}\`).classList.add('correct');
       AudioSys.wrong(); Vibrate(150); this.combo=0; this.overheatTimer=1; document.getElementById('overheat-overlay').style.display='block'; setTimeout(()=>document.getElementById('overheat-overlay').style.display='none',300);
       Env.enemies.forEach(e=>e.enrage=1.5);
       if(!State.mistakes.find(m=>m.q===q.q)){ State.mistakes.push({q:q.q,ans:q.opts[q.ans],exp:q.exp}); SaveSys.save(); }
@@ -512,80 +581,129 @@ let Combat = {
   },
   update(dt){
     if(!this.active)return;
-    if(this.recoil>0)this.recoil=Math.max(0,this.recoil-dt*50); if(this.feverTimer>0)this.feverTimer-=dt; document.getElementById('fever-text').style.display=this.feverTimer>0?'block':'none'; if(this.timeStopTimer>0)this.timeStopTimer-=dt;
+    if(this.recoil>0)this.recoil=Math.max(0,this.recoil-dt*100); if(this.feverTimer>0)this.feverTimer-=dt; document.getElementById('fever-text').style.display=this.feverTimer>0?'block':'none';
     if(this.overheatTimer>0) this.overheatTimer-=dt; else if(!this.isAnswering){ this.qTimer-=dt; if(this.qTimer<=0)this.answer(-1); }
-    this.spawnTimer-=dt; if(this.waveSpawned<this.waveTot&&this.spawnTimer<=0){ this.spawnTimer=1.5; this.waveSpawned++; let mIdx=Math.floor(Math.random()*42); if(!State.dex.includes(mIdx)){State.dex.push(mIdx);SaveSys.save();UI.updateBadges();} Env.enemies.push({...MONSTERS_DB[mIdx],x:GW+30,y:GH-30-(Math.random()*20),anim:0,curHp:MONSTERS_DB[mIdx].hp*(1+this.level*0.05),enrage:0}); }
+    
+    this.spawnTimer-=dt; 
+    if(this.waveSpawned<this.waveTot&&this.spawnTimer<=0){ 
+        this.spawnTimer=1.5; this.waveSpawned++; 
+        let mIdx=Math.floor(Math.random()*MONSTERS_DB.length); 
+        if(!State.dex) State.dex = [];
+        if(!State.dex.includes(mIdx)){
+            State.dex.push(mIdx); SaveSys.save(); UI.updateBadges();
+            UI.showNewMonsterAnim(MONSTERS_DB[mIdx]);
+        } 
+        let hp = MONSTERS_DB[mIdx].hp*(1+this.level*0.05);
+        Env.enemies.push({...MONSTERS_DB[mIdx],x:gameW+50,y:gameH-40-(Math.random()*60),anim:0,curHp:hp,maxHp:hp,enrage:0, effects:{burn:0, poison:0}}); 
+    }
+    
     for(let i=Env.enemies.length-1;i>=0;i--){
       let e=Env.enemies[i];
-      if(this.timeStopTimer<=0){ e.anim+=dt; if(e.enrage>0)e.enrage-=dt; if(e.type==='boss'&&e.x<GW-50&&Math.random()<0.005) Env.projs.push(new Projectile(e.x,e.y,50,GH-40,'#f0f',20,true)); else e.x-=(e.spd*(e.enrage>0?1.5:1)*(e.frozen?0.5:1)*dt); }
-      if(e.x<60){ this.hp-=(e.type==='boss'?25:(e.type==='heavy'?15:5)); AudioSys.hit(); Vibrate(100); Env.spawnExplosion(50,e.y,e.clr); Env.enemies.splice(i,1); this.waveKilled++; }
+      e.anim+=dt; if(e.enrage>0)e.enrage-=dt; 
+      
+      // Status effects
+      if(e.effects.burn > 0) { let d=10*dt; e.curHp -= d; e.effects.burn -= dt; if(Math.random()<0.1) Env.texts.push(new FloatingText(e.x, e.y, Math.floor(d*10), '#f50', 0.8)); Env.spawnExplosion(e.x, e.y, '#f50', 1, 0.5); }
+      if(e.effects.poison > 0) { let d=5*dt; e.curHp -= d; e.effects.poison -= dt; e.spd *= 0.9; if(Math.random()<0.1) Env.texts.push(new FloatingText(e.x, e.y, Math.floor(d*10), '#a0f', 0.8)); Env.spawnExplosion(e.x, e.y, '#a0f', 1, 0.5); }
+
+      if(e.curHp <= 0) {
+          Env.enemies.splice(i,1); this.waveKilled++; AudioSys.hit(); 
+          let tDef=TURRETS_DB[State.equippedTurret] || TURRETS_DB[0];
+          State.coins += (tDef.type === 'gold' ? 10 : 5); 
+          continue;
+      }
+
+      if(e.type==='boss'&&e.x<gameW-50&&Math.random()<0.005) Env.projs.push(new Projectile(e.x,e.y,gameW*0.1,gameH-40,'#f0f',20,true)); 
+      else e.x-=(e.spd*(e.enrage>0?1.5:1)*(e.frozen?0.5:1)*dt); 
+      
+      if(e.x<gameW*0.1){ this.hp-=(e.type==='boss'?25:(e.type==='heavy'?15:5)); AudioSys.hit(); Vibrate(100); Env.spawnExplosion(gameW*0.1,e.y,e.clr); Env.enemies.splice(i,1); this.waveKilled++; }
     }
     for(let i=Env.projs.length-1;i>=0;i--){
       let p=Env.projs[i]; p.update(dt); if(!p.active){Env.projs.splice(i,1);continue;}
-      if(p.isEnemy){ if(p.x<60){this.hp-=p.dmg;AudioSys.hit();Vibrate(100);Env.spawnExplosion(50,p.y,p.clr);p.active=false;} }
-      else{
-        let hR=p.type==='blackhole'?40:15;
+      if(p.isEnemy){ if(p.x<gameW*0.1){this.hp-=p.dmg;AudioSys.hit();Vibrate(100);Env.spawnExplosion(gameW*0.1,p.y,p.clr);p.active=false;} }
+      else if(p.type !== 'super_laser'){
+        let hR=p.type==='blackhole'?40:20;
         for(let j=0;j<Env.enemies.length;j++){ let e=Env.enemies[j]; if(Math.hypot(p.x-e.x,p.y-e.y)<e.size+hR){
-          e.curHp-=p.dmg; Env.spawnExplosion(p.x,p.y,p.clr,p.type==='blackhole'?2:8);
+          e.curHp-=p.dmg; Env.spawnExplosion(p.x,p.y,p.clr,4);
+          Env.texts.push(new FloatingText(e.x, e.y-e.size, Math.floor(p.dmg), p.isCrit?'#ff0':'#fff', p.isCrit?1.5:1.0));
+          
           if(p.type==='slow'||p.type==='aura_slow')e.frozen=true;
+          if(p.type==='burn') e.effects.burn = 3.0;
+          if(p.type==='poison') e.effects.poison = 5.0;
+
           if(p.type!=='pierce'&&p.type!=='blackhole')p.active=false;
-          if(p.type==='chain'&&p.bounces>0&&Env.enemies.length>1){ let nT=Env.enemies.find(ne=>ne!==e); if(nT)Env.projs.push(new Projectile(e.x,e.y,nT.x,nT.y,p.clr,p.dmg*0.8,false,'chain',p.bounces-1)); }
-          if(e.curHp<=0){ Env.enemies.splice(j,1); this.waveKilled++; AudioSys.hit(); State.coins+=5; }
+          if(p.type==='chain'&&p.bounces>0&&Env.enemies.length>1){ let nT=Env.enemies.find(ne=>ne!==e); if(nT)Env.projs.push(new Projectile(e.x,e.y,nT.x,nT.y,p.clr,p.dmg*0.8,false,'chain',p.bounces-1, p.isCrit)); }
+          
           if(!p.active)break;
         }}
       }
     }
     Env.particles.forEach(p=>p.update(dt)); Env.particles=Env.particles.filter(p=>p.life>0);
+    Env.texts.forEach(t=>t.update(dt)); Env.texts = Env.texts.filter(t=>t.life>0);
+    
     if(this.hp<=0){ this.active=false; UI.showResult(false); }
     else if(this.waveKilled>=this.waveTot){ this.active=false; State.coins+=100; if(this.route==='vocab'&&this.level===State.maxStageVocab)State.maxStageVocab++; if(this.route==='grammar'&&this.level===State.maxStageGrammar)State.maxStageGrammar++; SaveSys.save(); UI.showResult(true); }
   },
   draw(ctx){
     if(!this.active)return;
-    let hpBar=document.getElementById('combat-hp-fill'); hpBar.style.width=`${Math.max(0,this.hp)}%`; hpBar.style.background=this.hp>50?'#0f0':(this.hp>20?'#ff0':'#f00'); document.getElementById('combat-enemies').textContent=`剩餘: ${this.waveTot-this.waveKilled}`;
-    let tBar=document.getElementById('qa-timer'); tBar.style.width=`${(Math.max(0,this.qTimer)/this.qMax)*100}%`; tBar.style.background=this.overheatTimer>0?'var(--err)':'var(--p-color)';
-    ctx.clearRect(0,0,GW,GH); drawMechaBase(ctx,40,GH-20,this.hp/100);
-    let aimX=Env.enemies.length>0?Env.enemies[0].x:GW, aimY=Env.enemies.length>0?Env.enemies[0].y:GH-40;
-    drawTurretGun(ctx,State.equippedTurret,40,GH-40,Math.atan2(aimY-(GH-40),aimX-40),this.recoil);
-    Env.enemies.forEach(e=>drawMonster(ctx,e,e.x,e.y,e.anim,e.enrage)); Env.projs.forEach(p=>p.draw(ctx)); Env.particles.forEach(p=>p.draw(ctx));
+    let hpBar=document.getElementById('combat-hp-fill'); hpBar.style.width=\`\${Math.max(0,this.hp)}%\`; hpBar.style.background=this.hp>50?'#f00':(this.hp>20?'#ff0':'#f00'); document.getElementById('combat-enemies').textContent=\`剩餘: \${this.waveTot-this.waveKilled}\`;
+    let tBar=document.getElementById('qa-timer'); tBar.style.width=\`\${(Math.max(0,this.qTimer)/this.qMax)*100}%\`; tBar.style.background=this.overheatTimer>0?'var(--err)':'var(--p-color)';
+    
+    drawBackground(ctx, GW, GH, this.anim || Date.now()/1000);
+    drawMechaBase(ctx, gameW*0.1, gameH-20, this.hp/100);
+    
+    let aimX=Env.enemies.length>0?Env.enemies[0].x:gameW, aimY=Env.enemies.length>0?Env.enemies[0].y:gameH-40;
+    drawTurretGun(ctx,State.equippedTurret, gameW*0.1, gameH-40, Math.atan2(aimY-(gameH-40), aimX-(gameW*0.1)), this.recoil);
+    
+    Env.enemies.forEach(e=>drawMonster(ctx,e,e.x,e.y,e.anim,e.enrage,e.curHp,e.maxHp)); 
+    Env.projs.forEach(p=>p.draw(ctx)); 
+    Env.particles.forEach(p=>p.draw(ctx));
+    Env.texts.forEach(t=>t.draw(ctx));
   }
 };
 
-let Demo = { anim:0, projs:[], enemies:[], parts:[], update(dt){ if(GW===0)return; this.anim+=dt; if(Math.random()<0.02&&this.enemies.length<5){ this.enemies.push({x:GW+20,y:GH-20-(Math.random()*40),def:MONSTERS_DB[Math.floor(Math.random()*42)],anim:0}); } if(Math.random()<0.05&&this.enemies.length>0) this.projs.push({x:50,y:GH-50,tx:this.enemies[0].x,ty:this.enemies[0].y}); for(let i=this.enemies.length-1;i>=0;i--){let e=this.enemies[i];e.anim+=dt;e.x-=30*dt;if(e.x<50)this.enemies.splice(i,1);} for(let i=this.projs.length-1;i>=0;i--){let p=this.projs[i],dx=p.tx-p.x,dy=p.ty-p.y,dist=Math.hypot(dx,dy)||1;p.x+=(dx/dist)*400*dt;p.y+=(dy/dist)*400*dt;if(p.x>GW)this.projs.splice(i,1);else{let hit=this.enemies.findIndex(e=>Math.hypot(p.x-e.x,p.y-e.y)<20);if(hit>=0){for(let k=0;k<5;k++)this.parts.push({x:p.x,y:p.y,vx:(Math.random()-0.5)*100,vy:(Math.random()-0.5)*100,l:0.3,ml:0.3});this.projs.splice(i,1);this.enemies.splice(hit,1);}}} this.parts.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.l-=dt;}); this.parts=this.parts.filter(p=>p.l>0); }, draw(ctx){ ctx.clearRect(0,0,GW,GH*2); ctx.strokeStyle='rgba(0,255,255,0.05)'; ctx.lineWidth=1; let scroll=(this.anim*20)%40; for(let i=-40;i<GW;i+=40){ctx.beginPath();ctx.moveTo(i+scroll,0);ctx.lineTo(i+scroll,GH*2);ctx.stroke();} ctx.globalAlpha=0.3; drawMechaBase(ctx,40,GH-20); drawTurretGun(ctx,State.equippedTurret,40,GH-40,0,0); this.enemies.forEach(e=>drawMonster(ctx,e.def,e.x,e.y,e.anim)); this.projs.forEach(p=>drawGlow(ctx,p.x,p.y,3,'#0ff',1)); this.parts.forEach(p=>drawGlow(ctx,p.x,p.y,2,'#0ff',p.l/p.ml)); ctx.globalAlpha=1; } };
+let Demo = { anim:0, update(dt){ if(!GW)return; this.anim+=dt; }, draw(ctx){ drawBackground(ctx, GW, GH, this.anim); drawMechaBase(ctx, gameW*0.1, gameH-20); drawTurretGun(ctx, State.equippedTurret, gameW*0.1, gameH-40, 0, 0); } };
 
-/* === 6. UI & System === */
+/* === UI & System === */
 const UI = {
-  activeModal:null, init(){ document.querySelectorAll('.opt-btn').forEach((btn,i)=>btn.addEventListener('pointerdown',e=>{e.preventDefault();Combat.answer(i);})); this.showMenu(); },
-  updateBadges(){ document.getElementById('hud-coins').textContent=State.coins; document.getElementById('mistake-cnt').textContent=`(${State.mistakes.length})`; let rIdx=Math.min(5,Math.floor((State.maxStageVocab+State.maxStageGrammar)/30)); document.getElementById('cmd-rank').textContent=["見習詞彙兵","初級防衛者","中級破陣者","高階戰術家","學測征服者","傳說戰神"][rIdx]; document.getElementById('prog-txt-vocab').textContent=`第 ${State.maxStageVocab} 關`; document.getElementById('prog-bar-vocab').style.width=`${State.maxStageVocab}%`; document.getElementById('prog-txt-grammar').textContent=`第 ${State.maxStageGrammar} 關`; document.getElementById('prog-bar-grammar').style.width=`${State.maxStageGrammar}%`; document.getElementById('dex-prog-txt').textContent=`${State.dex.length}/42`; document.getElementById('gacha-badge').style.display=State.coins>=100?'block':'none'; let t=TURRETS_DB[State.equippedTurret]; document.getElementById('hangar-name').innerHTML=`${t.name} <span style="font-size:14px;color:var(--gold);">Lv.${State.turretLvls[t.id]}</span>`; document.getElementById('hangar-rare').textContent=t.rare; document.getElementById('hangar-rare').style.background=RARE_COLORS[t.rare]; document.getElementById('hangar-skill').textContent=`技能: ${t.skill}`; },
-  showMenu(){ this.closeAll(); document.getElementById('main-menu').classList.add('active'); this.updateBadges(); }, showCombat(){ this.closeAll(); document.getElementById('combat-ui').classList.add('active'); }, closeAll(){ document.querySelectorAll('.screen, .modal').forEach(el=>el.classList.remove('active')); this.activeModal=null; }, openModal(id){ if(this.activeModal)document.getElementById(this.activeModal).classList.remove('active'); document.getElementById(id).classList.add('active'); this.activeModal=id; }, closeModal(id){ document.getElementById(id).classList.remove('active'); this.activeModal=null; },
-  openStageSelect(route){ let max=route==='vocab'?State.maxStageVocab:State.maxStageGrammar; document.getElementById('ms-title').textContent=route==='vocab'?"單字征途":"文法試煉"; let grid=document.getElementById('ms-grid'); grid.innerHTML=''; let selStage=max; for(let i=1;i<=100;i++){ let btn=document.createElement('div'); btn.className='stage-btn'; if(i<=max){ btn.classList.add('unlocked'); btn.textContent=i; if(i===selStage)btn.classList.add('current'); btn.onclick=()=>{grid.querySelectorAll('.stage-btn').forEach(b=>b.classList.remove('current')); btn.classList.add('current'); selStage=i;}; }else{ btn.classList.add('locked'); btn.innerHTML='<span style="font-size:12px;">🔒</span>'; } grid.appendChild(btn); } document.getElementById('ms-start-btn').onclick=()=>{this.closeModal('modal-stage');Combat.start(route,selStage);}; this.openModal('modal-stage'); },
-  openGacha(){ document.getElementById('mg-coins').textContent=State.coins; let inv=document.getElementById('mg-inv'); inv.innerHTML=''; TURRETS_DB.forEach(t=>{ let d=document.createElement('div'); d.className='card-item'; let has=State.turrets.includes(t.id); if(!has)d.classList.add('locked'); if(State.equippedTurret===t.id)d.style.borderColor='#0f0'; d.innerHTML=`<div style="color:${RARE_COLORS[t.rare]};font-size:12px;font-weight:bold;">${t.rare}</div><div style="font-size:12px;margin:5px 0;">${has?t.name:'???'}</div>${has?`<div style="font-size:10px;color:var(--gold);">Lv.${State.turretLvls[t.id]}</div>`:''}`; if(has)d.onclick=()=>this.openTurretDetail(t.id,true); inv.appendChild(d); }); this.openModal('modal-gacha'); },
-  openTurretDetail(tid,fromGacha=false){ const t=TURRETS_DB[tid]; document.getElementById('td-name').textContent=t.name; document.getElementById('td-rare').textContent=t.rare; document.getElementById('td-rare').style.background=RARE_COLORS[t.rare]; document.getElementById('td-level').textContent=`Lv.${State.turretLvls[tid]||1}`; document.getElementById('td-type').textContent=t.desc; document.getElementById('td-skill').textContent=t.skill; let btn=document.getElementById('td-equip-btn'); if(State.equippedTurret===tid){btn.textContent="已裝備";btn.disabled=true;}else{btn.textContent="裝備出戰";btn.disabled=false;btn.onclick=()=>{State.equippedTurret=tid;SaveSys.save();UI.updateBadges();this.closeModal('modal-turret');if(fromGacha)this.openGacha();};} this.openModal('modal-turret'); this.previewTurretId=tid; },
-  openDex(){ document.getElementById('md-count').textContent=State.dex.length; let list=document.getElementById('md-list'); list.innerHTML=''; MONSTERS_DB.forEach(m=>{ let has=State.dex.includes(m.id), d=document.createElement('div'); d.className='card-item'; if(!has)d.classList.add('locked'); d.innerHTML=`<div style="color:${has?m.clr:'#555'};font-weight:bold;font-size:16px;">${has?m.name:'???'}</div><div style="font-size:12px;color:#aaa;margin-top:5px;">${m.type}</div>`; list.appendChild(d); }); this.openModal('modal-dex'); },
-  openMistakes(){ let list=document.getElementById('mm-list'); list.innerHTML=''; if(State.mistakes.length===0){ list.innerHTML='<div style="text-align:center;color:#555;padding:20px;">尚無錯題紀錄，繼續保持！</div>'; }else{ State.mistakes.forEach(m=>{ let d=document.createElement('div'); d.className='list-row'; d.innerHTML=`<div style="font-weight:bold;margin-bottom:8px;">${m.q}</div><div style="color:var(--succ);font-size:14px;margin-bottom:4px;">正確: ${m.ans}</div><div style="color:var(--p-color);font-size:14px;">💡 ${m.exp}</div>`; list.appendChild(d); }); } this.openModal('modal-mistakes'); },
-  showResult(win){ let oldDex=State.dex.length; document.getElementById('res-title').textContent=win?"VICTORY！完全勝利！":"DEFEAT！防線崩潰！"; document.getElementById('res-title').style.color=win?"var(--gold)":"var(--err)"; document.getElementById('res-stage').textContent=`${Combat.route==='vocab'?'單字征途':'文法試煉'} 第 ${Combat.level} 關`; document.getElementById('res-reward').textContent=win?"獲得 +100 💎":"獲得 +0 💎"; document.getElementById('res-stats').textContent=`答對率: ${Combat.stats.ansTot>0?Math.round((Combat.stats.ansCor/Combat.stats.ansTot)*100):0}%`; document.getElementById('res-new-monster').style.display=(win&&State.dex.length>oldDex)?'block':'none'; document.getElementById('res-next-btn').style.display=win?'block':'none'; this.openModal('modal-result'); if(win){AudioSys.init();AudioSys.victory();} },
-  showVisualEffect(text,color){ let el=document.createElement('div'); el.textContent=text; el.style.cssText=`position:absolute;top:30%;left:50%;transform:translate(-50%,-50%);font-size:30px;font-weight:bold;color:${color};text-shadow:0 0 10px ${color};z-index:50;pointer-events:none;animation:slideDownBounceEffect 0.5s forwards;`; document.getElementById('combat-ui').appendChild(el); setTimeout(()=>el.remove(),1500); },
+  activeModal:null, 
+  init(){ document.querySelectorAll('.opt-btn').forEach((btn,i)=>btn.addEventListener('pointerdown',e=>{e.preventDefault();Combat.answer(i);})); this.showMenu(); },
+  updateBadges(){ document.getElementById('hud-coins').textContent=State.coins; document.getElementById('mistake-cnt').textContent=\`(\${State.mistakes.length})\`; let rIdx=Math.min(5,Math.floor((State.maxStageVocab+State.maxStageGrammar)/30)); document.getElementById('cmd-rank').textContent=["見習兵","初級戰士","中級破陣者","高階戰術家","學測征服者","傳說戰神"][rIdx]; document.getElementById('prog-txt-vocab').textContent=\`第 \${State.maxStageVocab} 關\`; document.getElementById('prog-bar-vocab').style.width=\`\${State.maxStageVocab}%\`; document.getElementById('prog-txt-grammar').textContent=\`第 \${State.maxStageGrammar} 關\`; document.getElementById('prog-bar-grammar').style.width=\`\${State.maxStageGrammar}%\`; document.getElementById('dex-prog-txt').textContent=\`\${State.dex.length}/42\`; document.getElementById('gacha-badge').style.display=State.coins>=100?'block':'none'; let t=TURRETS_DB[State.equippedTurret]||TURRETS_DB[0]; document.getElementById('hangar-name').innerHTML=\`\${t.name} <span style="font-size:18px;color:var(--gold);">Lv.\${State.turretLvls[t.id]||1}</span>\`; document.getElementById('hangar-rare').textContent=t.rare; document.getElementById('hangar-rare').style.borderColor=RARE_COLORS[t.rare]; document.getElementById('hangar-rare').style.color=RARE_COLORS[t.rare]; document.getElementById('hangar-skill').textContent=\`技能: \${t.skill}\`; },
+  showMenu(){ this.closeAll(); document.getElementById('main-menu').classList.add('active'); this.updateBadges(); updateGameArea();}, 
+  showCombat(){ this.closeAll(); document.getElementById('combat-ui').classList.add('active'); }, 
+  closeAll(){ document.querySelectorAll('.screen, .modal').forEach(el=>el.classList.remove('active')); this.activeModal=null; }, 
+  openModal(id){ if(this.activeModal)document.getElementById(this.activeModal).classList.remove('active'); document.getElementById(id).classList.add('active'); this.activeModal=id; }, 
+  closeModal(id){ document.getElementById(id).classList.remove('active'); this.activeModal=null; },
+  showNewMonsterAnim(def) {
+      let el = document.createElement('div'); el.className = 'new-monster-anim';
+      el.innerHTML = \`<div class="nm-title">NEW DISCOVERY!</div><div class="nm-icon" style="background:\${def.clr}; border-color:\${def.clr}"></div><div class="nm-name">\${def.name}</div>\`;
+      document.body.appendChild(el); AudioSys.unlock();
+      setTimeout(() => el.remove(), 2500);
+  },
+  openStageSelect(route){ let max=route==='vocab'?State.maxStageVocab:State.maxStageGrammar; document.getElementById('ms-title').textContent=route==='vocab'?"單字征途":"文法試煉"; let grid=document.getElementById('ms-grid'); grid.innerHTML=''; let selStage=max; for(let i=1;i<=100;i++){ let btn=document.createElement('div'); btn.className='stage-btn'; if(i<=max){ btn.classList.add('unlocked'); btn.textContent=i; if(i===selStage)btn.classList.add('current'); btn.onclick=()=>{grid.querySelectorAll('.stage-btn').forEach(b=>b.classList.remove('current')); btn.classList.add('current'); selStage=i;}; }else{ btn.classList.add('locked'); btn.innerHTML='<span style="font-size:16px;">🔒</span>'; } grid.appendChild(btn); } document.getElementById('ms-start-btn').onclick=()=>{this.closeModal('modal-stage');Combat.start(route,selStage);}; this.openModal('modal-stage'); },
+  openGacha(){ document.getElementById('mg-coins').textContent=State.coins; let inv=document.getElementById('mg-inv'); inv.innerHTML=''; TURRETS_DB.forEach(t=>{ let d=document.createElement('div'); d.className='card-item'; let has=State.turrets.includes(t.id); if(!has)d.classList.add('locked'); if(State.equippedTurret===t.id)d.style.borderColor='#0f0'; d.innerHTML=\`<div style="color:\${RARE_COLORS[t.rare]};font-size:16px;font-weight:bold;">\${t.rare}</div><div style="font-size:16px;margin:5px 0;color:#fff;">\${has?t.name:'???'}</div>\${has?\`<div style="font-size:14px;color:var(--gold);">Lv.\${State.turretLvls[t.id]}</div>\`:\`\`}\`; if(has)d.onclick=()=>this.openTurretDetail(t.id,true); inv.appendChild(d); }); this.openModal('modal-gacha'); },
+  openTurretDetail(tid,fromGacha=false){ const t=TURRETS_DB[tid]; document.getElementById('td-name').textContent=t.name; document.getElementById('td-rare').textContent=t.rare; document.getElementById('td-rare').style.borderColor=RARE_COLORS[t.rare]; document.getElementById('td-rare').style.color=RARE_COLORS[t.rare]; document.getElementById('td-level').textContent=\`Lv.\${State.turretLvls[tid]||1}\`; document.getElementById('td-type').textContent=t.desc; document.getElementById('td-skill').textContent=t.skill; let btn=document.getElementById('td-equip-btn'); if(State.equippedTurret===tid){btn.textContent="已裝備";btn.disabled=true;}else{btn.textContent="裝備";btn.disabled=false;btn.onclick=()=>{State.equippedTurret=tid;SaveSys.save();UI.updateBadges();this.closeModal('modal-turret');if(fromGacha)this.openGacha();};} this.openModal('modal-turret'); this.previewTurretId=tid; },
+  openDex(){ document.getElementById('md-count').textContent=State.dex.length; let list=document.getElementById('md-list'); list.innerHTML=''; MONSTERS_DB.forEach(m=>{ let has=State.dex.includes(m.id), d=document.createElement('div'); d.className='card-item'; if(!has)d.classList.add('locked'); d.innerHTML=\`<div style="color:\${has?m.clr:'#555'};font-weight:bold;font-size:20px;text-shadow:1px 1px 0 #000;">\${has?m.name:'???'}</div><div style="font-size:16px;color:#aaa;margin-top:5px;">\${m.type}</div>\`; list.appendChild(d); }); this.openModal('modal-dex'); },
+  openMistakes(){ let list=document.getElementById('mm-list'); list.innerHTML=''; if(State.mistakes.length===0){ list.innerHTML='<div style="text-align:center;color:#555;padding:20px;font-size:20px;">尚無錯題紀錄！</div>'; }else{ State.mistakes.forEach(m=>{ let d=document.createElement('div'); d.className='list-row'; d.innerHTML=\`<div style="font-weight:bold;font-size:20px;margin-bottom:8px;color:#fff;">\${m.q}</div><div style="color:var(--succ);font-size:18px;margin-bottom:4px;">正確: \${m.ans}</div><div style="color:var(--p-color);font-size:18px;">💡 \${m.exp}</div>\`; list.appendChild(d); }); } this.openModal('modal-mistakes'); },
+  showResult(win){ document.getElementById('res-title').textContent=win?"VICTORY！":"DEFEAT！"; document.getElementById('res-title').style.color=win?"var(--gold)":"var(--err)"; document.getElementById('res-stage').textContent=\`\${Combat.route==='vocab'?'單字征途':'文法試煉'} 第 \${Combat.level} 關\`; document.getElementById('res-reward').textContent=win?"獲得 +100 💎":"獲得 +0 💎"; document.getElementById('res-stats').textContent=\`答對率: \${Combat.stats.ansTot>0?Math.round((Combat.stats.ansCor/Combat.stats.ansTot)*100):0}%\`; document.getElementById('res-next-btn').style.display=win?'block':'none'; this.openModal('modal-result'); if(win){AudioSys.init();AudioSys.victory();} },
   previewTurretId:-1, renderModals(){ if(!this.activeModal||this.activeModal==='modal-gacha'){ let hc=document.getElementById('hangar-canvas'); if(!hc){hc=document.createElement('canvas');hc.id='hangar-canvas';document.getElementById('hangar-canvas-container').appendChild(hc);} hc.width=hc.clientWidth; hc.height=hc.clientHeight; let hctx=hc.getContext('2d'); hctx.clearRect(0,0,hc.width,hc.height); hctx.save(); hctx.translate(hc.width/2,hc.height/2); drawMechaBase(hctx,0,20); drawTurretGun(hctx,State.equippedTurret,0,0,Math.sin(Date.now()*0.001)*0.2,0,1.5); hctx.restore(); } if(this.activeModal==='modal-turret'&&this.previewTurretId>=0){ let tc=document.getElementById('td-canvas-temp'); if(!tc){tc=document.createElement('canvas');tc.id='td-canvas-temp';tc.style.width='100%';tc.style.height='100%';tc.style.position='absolute';document.getElementById('td-canvas-container').appendChild(tc);} tc.width=tc.clientWidth; tc.height=tc.clientHeight; let tctx=tc.getContext('2d'); tctx.clearRect(0,0,tc.width,tc.height); tctx.save(); tctx.translate(tc.width/2,tc.height/2); drawMechaBase(tctx,0,20); drawTurretGun(tctx,this.previewTurretId,0,0,(Date.now()*0.002)%(Math.PI*2),0,1.5); tctx.restore(); } }
 };
 
 const Gacha = {
-  pull(times){ let cost=times===1?100:900; if(State.coins<cost){alert("鑽石不足！");return;} State.coins-=cost; SaveSys.save(); UI.openModal('gacha-anim'); document.getElementById('g-result-grid').style.display='none'; document.getElementById('g-circle').style.display='flex'; document.getElementById('gacha-skip-btn').style.display='block'; AudioSys.init(); AudioSys.play(200,'sawtooth',1.5,0.2); Vibrate([100,50,100,50,300]); let results=[]; for(let i=0;i<times;i++){ let r=Math.random(), pool=[]; if(times===10&&i===9) pool=TURRETS_DB.filter(t=>t.rare==='SR'||t.rare==='UR'); else{ if(r<0.02) pool=TURRETS_DB.filter(t=>t.rare==='UR'); else if(r<0.12) pool=TURRETS_DB.filter(t=>t.rare==='SR'); else if(r<0.40) pool=TURRETS_DB.filter(t=>t.rare==='R'); else pool=TURRETS_DB.filter(t=>t.rare==='N'); } let get=pool[Math.floor(Math.random()*pool.length)]; results.push(get); if(State.turrets.includes(get.id)) State.turretLvls[get.id]++; else{ State.turrets.push(get.id); State.turretLvls[get.id]=1; } } SaveSys.save(); this.animTid=setTimeout(()=>{this.showResultCards(results);},1500); },
-  showResultCards(arr){ document.getElementById('g-circle').style.display='none'; let grid=document.getElementById('g-result-grid'); grid.style.display='grid'; grid.innerHTML=''; let maxRare='N'; arr.forEach((d,i)=>{ if(d.rare==='UR')maxRare='UR'; else if(d.rare==='SR'&&maxRare!=='UR')maxRare='SR'; setTimeout(()=>{ let card=document.createElement('div'); card.className='card-item'; card.style.borderColor=d.clr; card.style.animation='pulse 0.3s ease-out'; card.innerHTML=`<div style="font-size:12px;color:${RARE_COLORS[d.rare]}">${d.rare}</div><div style="font-weight:bold;font-size:14px;">${d.name}</div>`; grid.appendChild(card); if(d.rare==='UR'||d.rare==='SR'){AudioSys.gachaSR();Vibrate([50,30,50,30,100]);}else{AudioSys.gachaR();Vibrate(30);} },i*150); }); if(maxRare==='UR'||maxRare==='SR'){ document.getElementById('gacha-anim').style.background='rgba(255,255,255,0.9)'; setTimeout(()=>document.getElementById('gacha-anim').style.background='#000',500); } document.getElementById('gacha-skip-btn').textContent="完成"; document.getElementById('gacha-skip-btn').onclick=()=>UI.openGacha(); }, skip(){ clearTimeout(this.animTid); UI.openGacha(); }
+  pull(times){ let cost=times===1?100:900; if(State.coins<cost){alert("鑽石不足！");return;} State.coins-=cost; SaveSys.save(); UI.openModal('gacha-anim'); document.getElementById('g-result-grid').style.display='none'; document.getElementById('g-circle').style.display='flex'; document.getElementById('gacha-skip-btn').style.display='block'; document.getElementById('gacha-skip-btn').textContent="跳過"; document.getElementById('gacha-skip-btn').onclick=()=>this.skip(); AudioSys.init(); AudioSys.play(200,'sawtooth',1.5,0.2); Vibrate([100,50,100,50,300]); let results=[]; for(let i=0;i<times;i++){ let r=Math.random(), pool=[]; if(times===10&&i===9) pool=TURRETS_DB.filter(t=>t.rare==='SR'||t.rare==='UR'); else{ if(r<0.02) pool=TURRETS_DB.filter(t=>t.rare==='UR'); else if(r<0.12) pool=TURRETS_DB.filter(t=>t.rare==='SR'); else if(r<0.40) pool=TURRETS_DB.filter(t=>t.rare==='R'); else pool=TURRETS_DB.filter(t=>t.rare==='N'); } if(pool.length===0) pool=TURRETS_DB; let get=pool[Math.floor(Math.random()*pool.length)]; results.push(get); if(State.turrets.includes(get.id)) State.turretLvls[get.id]++; else{ State.turrets.push(get.id); State.turretLvls[get.id]=1; } } SaveSys.save(); this.animTid=setTimeout(()=>{this.showResultCards(results);},1500); },
+  showResultCards(arr){ document.getElementById('g-circle').style.display='none'; let grid=document.getElementById('g-result-grid'); grid.style.display='grid'; grid.innerHTML=''; let maxRare='N'; arr.forEach((d,i)=>{ if(d.rare==='UR')maxRare='UR'; else if(d.rare==='SR'&&maxRare!=='UR')maxRare='SR'; setTimeout(()=>{ let card=document.createElement('div'); card.className='card-item'; card.style.borderColor=d.clr; card.innerHTML=\`<div style="font-size:16px;color:\${RARE_COLORS[d.rare]}">\${d.rare}</div><div style="font-weight:bold;font-size:20px;color:#fff;margin-top:5px;">\${d.name}</div>\`; grid.appendChild(card); if(d.rare==='UR'||d.rare==='SR'){AudioSys.gachaSR();Vibrate([50,30,50,30,100]);}else{AudioSys.gachaR();Vibrate(30);} },i*150); }); document.getElementById('gacha-skip-btn').textContent="完成"; document.getElementById('gacha-skip-btn').onclick=()=>UI.openGacha(); }, skip(){ clearTimeout(this.animTid); UI.openGacha(); }
 };
 
-const Game = {
-  addTestCoins(){ State.coins+=5000; SaveSys.save(); UI.updateBadges(); },
-  claimDaily(){ let now=Date.now(); if(now-State.lastDaily>86400000){ State.coins+=200; State.lastDaily=now; SaveSys.save(); UI.updateBadges(); alert("領取每日補給 200 💎"); }else alert("今天已經領取過囉！"); },
-  nextStage(){ UI.closeAll(); Combat.start(Combat.route, Math.min(100,Combat.level+1)); }
-};
+const Game = { addTestCoins(){ State.coins+=5000; SaveSys.save(); UI.updateBadges(); }, claimDaily(){ let now=Date.now(); if(now-State.lastDaily>86400000){ State.coins+=200; State.lastDaily=now; SaveSys.save(); UI.updateBadges(); alert("領取每日補給 200 💎"); }else alert("今天已經領取過囉！"); }, nextStage(){ UI.closeAll(); Combat.start(Combat.route, Math.min(100,Combat.level+1)); } };
 
-/* === 7. Main Loop === */
+/* === Main Loop === */
 let lastTime=0, fpsTimer=0, frames=0;
 function gameLoop(timestamp){
   if(!GW||!GH){ lastTime=timestamp; requestAnimationFrame(gameLoop); return; }
   let dt=Math.min(0.1,(timestamp-lastTime)/1000); lastTime=timestamp; frames++; fpsTimer+=dt;
-  if(fpsTimer>=1){ document.getElementById('fps-counter').textContent=`FPS: ${frames}`; frames=0; fpsTimer=0; }
-  if(document.getElementById('main-menu').classList.contains('active')){ Demo.update(dt); Demo.draw(CTX.bg); } else CTX.bg.clearRect(0,0,GW,GH*2);
-  if(Combat.active){ Combat.update(dt); Combat.draw(CTX.gm); } else CTX.gm.clearRect(0,0,GW,GH*2);
+  if(fpsTimer>=1){ document.getElementById('fps-counter').textContent=\`FPS: \${frames}\`; frames=0; fpsTimer=0; }
+  CTX.bg.clearRect(0,0,GW,GH); CTX.gm.clearRect(0,0,GW,GH);
+  if(document.getElementById('main-menu').classList.contains('active')){ Demo.update(dt); Demo.draw(CTX.gm); } 
+  if(Combat.active){ Combat.update(dt); Combat.draw(CTX.gm); } 
   UI.renderModals(); loopId=requestAnimationFrame(gameLoop);
 }
 document.addEventListener("visibilitychange",()=>{ if(document.hidden&&loopId){cancelAnimationFrame(loopId);loopId=null;} else if(!document.hidden&&!loopId){lastTime=performance.now();loopId=requestAnimationFrame(gameLoop);} });
